@@ -1,0 +1,76 @@
+{
+    "name": "yangweijie/php-tools",
+    "description": "tookit gui wrote by PHP",
+    "keywords": [
+        "framework",
+        "console",
+        "cli"
+    ],
+    "type": "project",
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/yangweijie/php-tools/issues",
+        "source": "https://github.com/yangweijie/php-tools"
+    },
+    "authors": [
+        {
+            "name": "yangweijie",
+            "email": "917647288@qq.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "chillerlan/php-qrcode": "^6.0",
+        "erusev/parsedown": "^1.8",
+        "kingbes/libui": "*",
+        "monolog/monolog": "^3.9",
+        "yangweijie/ui2": "^0.9.0",
+        "illuminate/process": "^13.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.20",
+        "mockery/mockery": "^1.6.12",
+        "pestphp/pest": "*",
+        "phpacker/phpacker": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Kingbes\\Libui\\SDK\\": "sdk/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "preferred-install": {
+            "kingbes/libui": "source",
+            "*": "dist"
+        },
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "bin": [
+        "cli.php"
+    ],
+    "scripts": {
+        "test": "@php vendor/bin/pest",
+        "post-install-cmd": [
+            "@php scripts/check-libui-dylib.php",
+            "@php scripts/patchBase.php"
+        ],
+        "post-update-cmd": [
+            "@php scripts/check-libui-dylib.php",
+            "@php scripts/patchBase.php"
+        ]
+    }
+}

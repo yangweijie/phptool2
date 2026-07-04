@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlyEnv Toolbox</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0f1117; --surface: #1a1c25; --card: #22242f;
+  --border: #2a2d3a; --text: #e4e6ef; --text-dim: #888ca0;
+  --primary: #6c5ce7; --primary-hover: #7c6ff0; --accent: #00cec9;
+  --success: #00b894; --warning: #fdcb6e; --danger: #e17055;
+  --info: #74b9ff; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,.3);
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar { width: 220px; min-width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.sidebar-header { padding: 20px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-header h1 { font-size: 18px; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; }
+.sidebar-header p { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.sidebar-search { padding: 10px; }
+.sidebar-search input { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 12px; outline: none; }
+.sidebar-search input:focus { border-color: var(--primary); }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 4px; }
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.cat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; padding: 12px 12px 4px; font-weight: 600; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: all .2s; font-size: 13px; color: var(--text-dim); margin: 1px 0; }
+.nav-item:hover { background: rgba(108,92,231,.1); color: var(--text); }
+.nav-item.active { background: var(--primary); color: #fff; }
+.nav-item .icon { font-size: 16px; width: 22px; text-align: center; }
+.nav-item .badge { margin-left: auto; font-size: 10px; background: var(--bg); padding: 1px 6px; border-radius: 6px; color: var(--text-dim); }
+.nav-item.active .badge { background: rgba(255,255,255,.15); color: rgba(255,255,255,.8); }
+
+/* ── Main Content ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.toolbar { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+.toolbar h2 { font-size: 16px; font-weight: 600; }
+.toolbar .tool-desc { font-size: 12px; color: var(--text-dim); }
+.content { flex: 1; overflow-y: auto; padding: 20px; }
+.content::-webkit-scrollbar { width: 6px; }
+.content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Panels ── */
+.tool-panel { display: none; }
+.tool-panel.active { display: block; animation: fadeIn .25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Common Components ── */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.card-title { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; font-weight: 600; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.row.grow > * { flex: 1; min-width: 0; }
+label { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; display: block; }
+input[type="text"], input[type="number"], input[type="password"], textarea, select {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
+  color: var(--text); font-size: 13px; outline: none; width: 100%; font-family: inherit;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(108,92,231,.2); }
+textarea { resize: vertical; min-height: 60px; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 12px; line-height: 1.5; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px;
+  border: none; font-size: 12px; font-weight: 500; cursor: pointer; transition: all .2s;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+}
+.btn:hover { border-color: var(--primary); background: rgba(108,92,231,.1); }
+.btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.success { background: var(--success); color: #fff; border-color: var(--success); }
+.btn.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn.accent { background: var(--accent); color: #000; border-color: var(--accent); }
+.btn.sm { padding: 4px 10px; font-size: 11px; }
+.dual-pane { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dual-pane textarea { min-height: 150px; }
+.output-area { background: #0d0e14; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; min-height: 80px; max-height: 300px; overflow: auto; color: #a8b0c0; }
+.output-area .add { color: var(--success); }
+.output-area .del { color: var(--danger); }
+.output-area .key { color: var(--info); }
+.output-area .str { color: var(--accent); }
+.output-area .num { color: var(--warning); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: rgba(108,92,231,.15); color: var(--primary); }
+.chmod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chmod-group { background: var(--bg); border-radius: 8px; padding: 12px; text-align: center; }
+.chmod-group h4 { font-size: 12px; margin-bottom: 6px; color: var(--text-dim); }
+.chmod-group label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; margin: 3px 6px; cursor: pointer; }
+/* QR */
+.qr-output { display: flex; justify-content: center; padding: 20px; background: #fff; border-radius: var(--radius); margin-top: 12px; }
+/* Token grid */
+.token-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.token-item { background: var(--bg); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 11px; word-break: break-all; }
+/* Status */
+.status { font-size: 11px; color: var(--text-dim); padding: 8px 0; text-align: center; border-top: 1px solid var(--border); margin-top: 8px; }
+/* HTTP code badge */
+.code-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+.code-2xx { background: rgba(0,184,148,.15); color: var(--success); }
+.code-3xx { background: rgba(116,185,255,.15); color: var(--info); }
+.code-4xx { background: rgba(253,203,110,.15); color: var(--warning); }
+.code-5xx { background: rgba(225,112,85,.15); color: var(--danger); }
+/* Checkbox style */
+.chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; padding: 4px 8px; border-radius: 6px; transition: .15s; }
+.chk:hover { background: rgba(108,92,231,.08); }
+.chk input { width: 16px; height: 16px; accent-color: var(--primary); }
+/* Markdown preview */
+.md-preview { padding: 16px; line-height: 1.7; }
+.md-preview h1, .md-preview h2, .md-preview h3 { margin: 16px 0 8px; }
+.md-preview h1 { font-size: 24px; }
+.md-preview h2 { font-size: 20px; }
+.md-preview p { margin-bottom: 8px; }
+.md-preview pre { background: var(--bg); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+.md-preview code { background: rgba(108,92,231,.15); padding: 1px 4px; border-radius: 3px; }
+.md-preview blockquote { border-left: 3px solid var(--primary); padding-left: 12px; color: var(--text-dim); margin: 8px 0; }
+.md-preview table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+.md-preview th, .md-preview td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+.md-preview th { background: var(--surface); }
+/* File info */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.info-item { padding: 6px 10px; background: var(--bg); border-radius: 6px; }
+.info-item .label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; }
+.info-item .value { font-size: 13px; font-weight: 500; font-family: monospace; }
+/* WebSocket log */
+.log-area { background: #0d0e14; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: monospace; font-size: 11px; line-height: 1.5; min-height: 120px; max-height: 250px; overflow: auto; color: #a8b0c0; }
+.log-area .info { color: var(--info); }
+.log-area .success { color: var(--success); }
+.log-area .error { color: var(--danger); }
+.log-area .sent { color: var(--warning); }
+.log-area .recv { color: var(--accent); }
+/* Chmod presets */
+.presets { display: flex; gap: 4px; flex-wrap: wrap; }
+.presets button { padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; font-size: 11px; }
+.presets button:hover { border-color: var(--primary); background: rgba(108,92,231,.1); }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>⚡ FlyEnv Toolbox</h1>
+    <p>23 developer tools</p>
+  </div>
+  <div class="sidebar-search">
+    <input type="text" placeholder="Search tools..." oninput="filterTools(this.value)">
+  </div>
+  <div class="sidebar-nav" id="sidebarNav"></div>
+</div>
+
+<div class="main">
+  <div class="toolbar">
+    <div>
+      <h2 id="toolTitle">Diff</h2>
+      <span class="tool-desc" id="toolDesc">Text comparison</span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span class="status-badge" id="statusBadge">Ready</span>
+    </div>
+  </div>
+  <div class="content" id="toolContent"></div>
+</div>
+
+<script>
+// ── Tool definitions ──
+const TOOLS = [
+  { id: 'diff',    icon: '📄', name: 'Diff', cat: 'Core', desc: 'Text diff comparison' },
+  { id: 'jwt',     icon: '🔐', name: 'JWT', cat: 'Core', desc: 'JWT encode/decode' },
+  { id: 'cron',    icon: '⏰', name: 'Cron', cat: 'Core', desc: 'Cron expression calculator' },
+  { id: 'wss',     icon: '🌐', name: 'WS/SSE', cat: 'Core', desc: 'WebSocket/SSE test' },
+  { id: 'json',    icon: '🔤', name: 'JSON', cat: 'Data', desc: 'Format / validate / minify' },
+  { id: 'base64',  icon: '🔢', name: 'Base64', cat: 'Data', desc: 'Encode / decode' },
+  { id: 'url',     icon: '🔗', name: 'URL', cat: 'Data', desc: 'Encode / decode / parse' },
+  { id: 'hash',    icon: '🔑', name: 'Hash', cat: 'Data', desc: 'MD5 / SHA / CRC32' },
+  { id: 'htmlEsc', icon: '🌍', name: 'HTML Esc', cat: 'Data', desc: 'Escape / unescape' },
+  { id: 'crypt',   icon: '🔒', name: 'Crypt', cat: 'Security', desc: 'AES encrypt / decrypt' },
+  { id: 'token',   icon: '🎲', name: 'Token', cat: 'Security', desc: 'Random token generator' },
+  { id: 'rsa',     icon: '🔑', name: 'RSA', cat: 'Security', desc: 'RSA key pair generator' },
+  { id: 'mime',    icon: '📁', name: 'MIME', cat: 'Security', desc: 'MIME type lookup' },
+  { id: 'ts',      icon: '🕐', name: 'Timestamp', cat: 'Dev', desc: 'Unix time converter' },
+  { id: 'regex',   icon: '🦊', name: 'Regex', cat: 'Dev', desc: 'Regex tester' },
+  { id: 'chmod',   icon: '🔐', name: 'Chmod', cat: 'Dev', desc: 'Permission calculator' },
+  { id: 'http',    icon: '📡', name: 'HTTP Status', cat: 'Dev', desc: 'Status code reference' },
+  { id: 'file',    icon: '📂', name: 'File Info', cat: 'Dev', desc: 'File details & hashes' },
+  { id: 'bom',     icon: '🧹', name: 'BOM', cat: 'Dev', desc: 'BOM detect / clean' },
+  { id: 'qr',      icon: '📱', name: 'QR Code', cat: 'Media', desc: 'QR code generator' },
+  { id: 'md',      icon: '📝', name: 'Markdown', cat: 'Media', desc: 'MD preview' },
+  { id: 'image',   icon: '🖼️', name: 'Image', cat: 'Media', desc: 'Compress & screenshot' },
+  { id: 'code',    icon: '💻', name: 'Code Lab', cat: 'Media', desc: 'PHP code playground' },
+];
+
+let activeTool = 'diff';
+
+// ── Bridge: Call PHP ──
+async function php(name, data = {}) {
+  const key = `php_${name}`;
+  if (typeof window[key] !== 'function') {
+    console.warn(`PHP function "${name}" not bound`);
+    return { error: 'Not available' };
+  }
+  return new Promise((resolve, reject) => {
+    const orig = window[key];
+    // Override temporarily to capture the return
+    const wrapper = async function(id, req) {
+      try {
+        const result = await orig(id, req);
+        // Actually the bridge calls return() directly...
+      } catch(e) { reject(e); }
+    };
+    // The bridge pattern: php_xxx sends data, gets result via return($id, $status, $data)
+    // We need to set up a listener
+    if (!window.__phpCallbacks) window.__phpCallbacks = {};
+    const callId = 'c' + Date.now() + Math.random().toString(36).slice(2);
+    window.__phpCallbacks[callId] = resolve;
+    // Execute the actual PHP bridge call
+    // The WebView bridge: php_xxx(id, req) where req is JSON
+    // Result comes back via window.__phpCallback(id, data)
+    window[key](callId, JSON.stringify(data));
+  });
+}
+
+// Listen for PHP returns
+window.__phpCallback = function(id, status, data) {
+  if (window.__phpCallbacks && window.__phpCallbacks[id]) {
+    const resolve = window.__phpCallbacks[id];
+    delete window.__phpCallbacks[id];
+    const parsed = JSON.parse(data);
+    if (status === 0) resolve(parsed);
+    else reject(new Error(parsed.error || 'Unknown error'));
+  }
+};
+
+</script>
+</body>
+</html>
