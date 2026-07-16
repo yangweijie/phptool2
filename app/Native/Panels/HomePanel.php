@@ -25,6 +25,9 @@ final class HomePanel implements Panel
     private float $h;
     private Catalog $catalog;
     public \Closure $onToolClick;
+    public \Closure $onToggleFavorite;
+    /** @var \Closure(string, int): void direction: -1=up, +1=down */
+    public \Closure $onReorderFavorite;
 
     public function build(Surface $surface, string $key, float $width, float $height): LayoutNode
     {
@@ -113,7 +116,7 @@ final class HomePanel implements Panel
                 $grid->child($row);
             }
 
-            $card = $this->buildCard($t, $cellW, $cellH, $isFav);
+            $card = $this->buildCard($t, $cellW, $cellH, $isFav, $i, count($tools));
             if ($row !== null) {
                 $row->child($card);
             }
@@ -131,28 +134,78 @@ final class HomePanel implements Panel
     /**
      * @param array{id:string,cat:string,name:string,nameEn:string,icon:string} $tool
      */
-    private function buildCard(array $tool, float $cellW, float $cellH, bool $isFav): LayoutNode
+    private function buildCard(array $tool, float $cellW, float $cellH, bool $isFav, int $index = 0, int $total = 1): LayoutNode
     {
         $icon = $tool['icon'] ?? '🔧';
         $name = $this->catalog->chinese() ? $tool['name'] : $tool['nameEn'];
+        $toolId = $tool['id'];
 
-        // Clickable card leaf — uses ButtonSpec 'soft' (no heavy chrome).
-        // The label is the centered icon + name, separated by newline so it
-        // shows as 2 lines: icon on top, name on bottom.
+        // Card column — button fills cell, star overlays at top-right.
+        $cardCol = LayoutNode::column(gap: 0, width: $cellW, height: $cellH);
+
+        // Clickable card leaf — fills the entire cell.
         $label = "{$icon}\n{$name}";
-        $btnId = $isFav ? "home:fav:{$tool['id']}" : "home:tool:{$tool['id']}";
+        $btnId = "home:tool:{$toolId}";
         $card = LayoutNode::leaf(
             $btnId,
             new ButtonSpec($label, 'card'),
             width: $cellW,
             height: $cellH,
         );
+        $cardCol->child($card);
 
-        $toolId = $tool['id'];
         $this->surface->onClick($btnId, function () use ($toolId): void {
             ($this->onToolClick)($toolId);
         });
 
-        return $card;
+        // Star overlay — absolute positioned at top-right corner of the card.
+        $starLabel = $isFav ? '★' : '☆';
+        $starId = "home:star:{$toolId}";
+        $star = LayoutNode::leaf(
+            $starId,
+            new ButtonSpec($starLabel, 'soft'),
+            width: 24.0,
+            height: 24.0,
+        );
+        $star->style->absolute = true;
+        $star->style->left = $cellW - 28.0;
+        $star->style->top = 4.0;
+        $cardCol->child($star);
+
+        $this->surface->onClick($starId, function () use ($toolId): void {
+            ($this->onToggleFavorite)($toolId);
+        });
+
+        // Reorder buttons (▲/▼) — only for favorited cards, bottom-right corner
+        if ($isFav && $total > 1) {
+            $canUp = $index > 0;
+            $canDown = $index < $total - 1;
+
+            if ($canUp) {
+                $upId = "home:up:{$toolId}";
+                $upBtn = LayoutNode::leaf($upId, new ButtonSpec('▲', 'soft'), width: 20.0, height: 18.0);
+                $upBtn->style->absolute = true;
+                $upBtn->style->left = $cellW - 52.0;
+                $upBtn->style->top = $cellH - 22.0;
+                $cardCol->child($upBtn);
+                $this->surface->onClick($upId, function () use ($toolId): void {
+                    ($this->onReorderFavorite)($toolId, -1);
+                });
+            }
+
+            if ($canDown) {
+                $downId = "home:down:{$toolId}";
+                $downBtn = LayoutNode::leaf($downId, new ButtonSpec('▼', 'soft'), width: 20.0, height: 18.0);
+                $downBtn->style->absolute = true;
+                $downBtn->style->left = $cellW - 28.0;
+                $downBtn->style->top = $cellH - 22.0;
+                $cardCol->child($downBtn);
+                $this->surface->onClick($downId, function () use ($toolId): void {
+                    ($this->onReorderFavorite)($toolId, 1);
+                });
+            }
+        }
+
+        return $cardCol;
     }
 }

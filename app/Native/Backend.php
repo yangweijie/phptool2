@@ -768,15 +768,74 @@ final class Backend
         }
     }
 
-    public static function wifiQrGenerate(string $ssid, string $password, string $encryption = 'WPA', string $ecc = 'M', int $scale = 8, string $fg = '#000000', string $bg = '#ffffff'): string
-    {
-        $wifiText = "WIFI:T:{$encryption};S:{$ssid};P:{$password};;";
+    /**
+     * Build a WIFI QR string per the WPA QR spec.
+     *
+     * @param array{eap?:string,identity?:string,anonymous?:string,phase2?:string,hidden?:bool} $extra
+     */
+    public static function wifiQrBuildString(
+        string $ssid,
+        string $password,
+        string $encryption = 'WPA',
+        array  $extra = [],
+    ): string {
+        $esc = static fn(string $v): string => preg_replace('/([\\;:,"])/', '\\\\$1', $v);
+
+        if ($encryption === 'nopass') {
+            return 'WIFI:S:' . $esc($ssid) . ';;';
+        }
+
+        $parts = [
+            'S:' . $esc($ssid),
+            'T:' . $encryption,
+            'P:' . $esc($password),
+        ];
+
+        if ($encryption === 'WPA2-EAP') {
+            $parts[] = 'E:' . ($extra['eap'] ?? 'PEAP');
+            if (!empty($extra['phase2'])) {
+                $parts[] = 'PH2:' . $extra['phase2'];
+            }
+            if (!empty($extra['anonymous'])) {
+                $parts[] = 'A:' . $esc($extra['anonymous']);
+            } elseif (!empty($extra['identity'])) {
+                $parts[] = 'I:' . $esc($extra['identity']);
+            }
+        }
+
+        if (!empty($extra['hidden'])) {
+            $parts[] = 'H:true';
+        }
+
+        return 'WIFI:' . implode(';', $parts) . ';;';
+    }
+
+    public static function wifiQrGenerate(
+        string $ssid,
+        string $password,
+        string $encryption = 'WPA',
+        string $ecc = 'M',
+        int    $scale = 8,
+        string $fg = '#000000',
+        string $bg = '#ffffff',
+        array  $extra = [],
+    ): string {
+        $wifiText = self::wifiQrBuildString($ssid, $password, $encryption, $extra);
         return self::qrCodeGenerate($wifiText, $ecc, $scale, $fg, $bg);
     }
 
-    public static function wifiQrSavePng(string $ssid, string $password, string $encryption, string $path, string $ecc = 'M', int $scale = 10, string $fg = '#000000', string $bg = '#ffffff'): string
-    {
-        $wifiText = "WIFI:T:{$encryption};S:{$ssid};P:{$password};;";
+    public static function wifiQrSavePng(
+        string $ssid,
+        string $password,
+        string $encryption,
+        string $path,
+        string $ecc = 'M',
+        int    $scale = 10,
+        string $fg = '#000000',
+        string $bg = '#ffffff',
+        array  $extra = [],
+    ): string {
+        $wifiText = self::wifiQrBuildString($ssid, $password, $encryption, $extra);
         return self::qrCodeSavePng($wifiText, $path, $ecc, $scale, $fg, $bg);
     }
 

@@ -239,6 +239,16 @@ final class NativeApp
             $this->openTool($toolId);
         };
 
+        $this->homePanel->onToggleFavorite = function (string $toolId): void {
+            $this->catalog->toggleFavorite($toolId);
+            $this->goHome();
+        };
+
+        $this->homePanel->onReorderFavorite = function (string $toolId, int $direction): void {
+            $this->catalog->reorderFavorite($toolId, $direction);
+            $this->goHome();
+        };
+
         $this->surface->onResize(fn(float $a, float $b) => $this->onAreaResize($a, $b));
 
         $window = new Window('FlyEnv Toolbox', (int)self::WIN_W, (int)self::WIN_H, false);

@@ -32,6 +32,9 @@ final class Catalog
     /** @var array<string,bool> tool id => isFav */
     private array $favorites;
 
+    /** @var list<string> user-specified favorites order (most-favored first) */
+    private array $favoritesOrder = [];
+
     private string $favFile;
 
     public static function getInstance(): Catalog
@@ -228,9 +231,24 @@ final class Catalog
 
     // ── Favorites ──────────────────────────────────────────────────────────
 
-    /** @return list<array{id:string,cat:string,name:string,icon:string}> */
+    /** @return list<array{id:string,cat:string,name:string,nameEn:string,icon:string}> */
     public function favorites(): array
     {
+        // If we have a user-specified order, use it
+        if (!empty($this->favoritesOrder)) {
+            $toolMap = [];
+            foreach ($this->tools as $t) {
+                $toolMap[$t['id']] = $t;
+            }
+            $out = [];
+            foreach ($this->favoritesOrder as $id) {
+                if (!empty($this->favorites[$id]) && isset($toolMap[$id])) {
+                    $out[] = $toolMap[$id];
+                }
+            }
+            return $out;
+        }
+        // Fallback: use master tools order
         $out = [];
         foreach ($this->tools as $t) {
             if (!empty($this->favorites[$t['id']])) {
@@ -249,9 +267,35 @@ final class Catalog
     {
         if (!empty($this->favorites[$toolId])) {
             unset($this->favorites[$toolId]);
+            // Remove from order
+            $this->favoritesOrder = array_values(array_filter($this->favoritesOrder, fn ($id) => $id !== $toolId));
         } else {
             $this->favorites[$toolId] = true;
+            $this->favoritesOrder[] = $toolId;
         }
+        $this->saveFavorites();
+    }
+
+    /**
+     * Move a favorited tool one step up (-1) or down (+1) in the favorites list.
+     */
+    public function reorderFavorite(string $toolId, int $direction): void
+    {
+        if (empty($this->favorites[$toolId])) {
+            return;
+        }
+        $idx = array_search($toolId, $this->favoritesOrder);
+        if ($idx === false) {
+            return;
+        }
+        $newIdx = $idx + $direction;
+        if ($newIdx < 0 || $newIdx >= count($this->favoritesOrder)) {
+            return;
+        }
+        // Swap
+        $temp = $this->favoritesOrder[$idx];
+        $this->favoritesOrder[$idx] = $this->favoritesOrder[$newIdx];
+        $this->favoritesOrder[$newIdx] = $temp;
         $this->saveFavorites();
     }
 
@@ -271,7 +315,21 @@ final class Catalog
     {
         if (is_file($this->favFile)) {
             $data = json_decode(file_get_contents($this->favFile), true);
-            $this->favorites = is_array($data) ? $data : [];
+            if (is_array($data)) {
+                // Support both formats: old (hash map) and new (with order key)
+                if (isset($data['order']) && isset($data['ids'])) {
+                    $this->favorites = [];
+                    foreach ($data['ids'] as $id) {
+                        $this->favorites[$id] = true;
+                    }
+                    $this->favoritesOrder = $data['order'];
+                } else {
+                    $this->favorites = $data;
+                    $this->favoritesOrder = array_keys($data);
+                }
+            } else {
+                $this->favorites = [];
+            }
         } else {
             $this->favorites = [];
         }
@@ -279,6 +337,10 @@ final class Catalog
 
     private function saveFavorites(): void
     {
-        file_put_contents($this->favFile, json_encode($this->favorites, JSON_UNESCAPED_UNICODE));
+        $data = [
+            'ids' => $this->favorites,
+            'order' => $this->favoritesOrder,
+        ];
+        file_put_contents($this->favFile, json_encode($data, JSON_UNESCAPED_UNICODE));
     }
 }
