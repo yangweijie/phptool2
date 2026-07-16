@@ -1,187 +1,76 @@
 # Progress Log
-<!-- 
-  WHAT: 你的会话日志 - 按时间顺序记录你做了什么、什么时候、发生了什么。
-  WHY: 回答"我做了什么？"这个 5 问题重启测试中的问题。帮助你在中断后恢复。
-  WHEN: 在每个阶段完成后或遇到错误时更新。比 task_plan.md 更详细。
--->
 
-## Session: 2026-06-30
-<!-- 
-  WHAT: 这次工作会话的日期。
-  WHY: 帮助跟踪工作发生的时间，对于在时间间隔后恢复很有用。
-  EXAMPLE: 2026-01-15
--->
+## Session: 2026-07-15
 
-### Phase 1: 项目迁移与环境搭建
-<!-- 
-  WHAT: 这个阶段采取的详细行动日志。
-  WHY: 提供所做工作的上下文，使恢复或调试更容易。
-  WHEN: 在你完成阶段时更新，或至少当你完成它时更新。
--->
-- **Status:** complete
-- **Started:** 2026-06-30 10:00
-- **Completed:** 2026-06-30 10:30
-<!-- 
-  STATUS: 与 task_plan.md 相同（pending, in_progress, complete）
-  TIMESTAMP: 当你开始这个阶段时（例如，"2026-01-15 10:00"）
--->
-- Actions taken:
-  - 将 flyenv-web.php、app/、assets/ 从 /Volumes/data/git/php/php-tools/ 复制到 /Volumes/data/git/php/phptools2/
-  - 复制 composer.json、composer.lock、vendor/ 依赖
-  - 复制 box.json、phpunit.xml.dist 配置
-  - 验证应用可以正常启动（php85 flyenv-web.php）
-- Files created/modified:
-  - flyenv-web.php (copied)
-  - app/ (copied)
-  - assets/ (copied)
-  - composer.json (copied)
-  - composer.lock (copied)
-  - vendor/ (copied)
-  - box.json (copied)
-  - phpunit.xml.dist (copied)
+### Phase 1: 核心 UX 框架 ✅ (previous)
+- Icons, search, home page, favorites, i18n, theme, collapsible sidebar
 
-### Phase 2: Pest PHP 测试框架集成
-<!-- 
-  WHAT: 与 Phase 1 相同的结构，用于下一个阶段。
-  WHY: 为每个阶段保持单独的对数条目以清晰地跟踪进度。
--->
-- **Status:** complete
-- **Started:** 2026-06-30 10:30
-- **Completed:** 2026-06-30 11:30
-- Actions taken:
-  - 通过 Composer 安装 pestphp/pest (^4.7)
-  - 创建 tests/ 目录结构（Unit/、Feature/）
-  - 创建 tests/Pest.php 配置文件
-  - 编写 FlyEnvWebAppTest.php 单元测试
-  - 测试工具数据完整性、分类校验、renderTree/getHtml 输出结构
-  - 修复测试断言方式（数组键检查、类型检查）
-  - 验证 12 个测试全部通过（617 断言）
-- Files created/modified:
-  - tests/Pest.php (created)
-  - tests/Unit/FlyEnvWebAppTest.php (created)
-  - composer.json (updated - added pestphp/pest as dev dependency)
-  - composer.lock (updated)
-  - vendor/ (updated - added pest and dependencies)
+### Phase 2: JSON/Diff/Markdown 增强 ✅ (this session)
+- **Completed:** 2026-07-15 16:15
+- **Actions taken:**
+  - Backend: `jsonConvert()` 支持 13 种输出格式（json/minify/php/js/ts/yaml/xml/toml/goStruct/rustSerde/Java/Kotlin/MySQL）
+  - Backend: `jsonSortRecursive()` 升序/降序递归排序
+  - Backend: `fileRead()` / `fileSave()` 文件操作
+  - Backend: `longestCommonSubsequence()` LCS diff 算法
+  - WindowHolder: 全局 Window 引用（用于文件对话框）
+  - **JsonPanel**: 重写为分栏布局 + 可拖拽分隔条 + Tab 管理 + 13 格式 + 文件打开/保存 + 自动类型检测 + 排序
+  - **DiffPanel**: 重写为分栏布局 + 拖拽分隔条 + LCS diff + 统计标签 (added/removed/changed) + 上/下一处导航 + 示例/交换/清空/复制
+  - **MarkdownPanel**: 重写为分栏布局 + 拖拽分隔条 + 多 Tab + 文件打开 + WebView 实时渲染
+- **Automation tests (12 all ✅):**
+  - JSON: Format, Validate, Sort Asc, Detect type — all 4 ✅
+  - Markdown: Render, Add tab — 2 ✅
+  - Diff: Compare, Sample, Swap, Clear — 4 ✅
+  - Navigation to each panel — 3 ✅
+- **Pest:** 41 passed, 859 assertions
+- **Lint:** All 5 new/modified files clean
 
-### Phase 3: Vitest 前端测试框架集成
-<!-- 
-  WHAT: 与 Phase 1 相同的结构，用于下一个阶段。
--->
-- **Status:** complete
-- **Started:** 2026-06-30 11:30
-- **Completed:** 2026-06-30 12:30
-- Actions taken:
-  - 初始化 npm，安装 vitest 和 jsdom
-  - 创建 vitest.config.js 配置文件
-  - 创建 tests/JS/setup.js 加载 JS 源文件
-  - 创建 tests/JS/toolbox.test.js 测试文件
-  - 测试 _t()、esc()、isFav()、b64u/b64ud() 等纯函数
-  - 测试 goHome()、openTool()、toggleSidebar() 等 DOM 操作
-  - 测试 __p 面板模板、HC/MM 静态数据
-  - 修复全局变量同步问题（globalThis 与局部变量）
-  - 验证 39 个测试全部通过
-- Files created/modified:
-  - package.json (created)
-  - vitest.config.js (created)
-  - tests/JS/setup.js (created)
-  - tests/JS/toolbox.test.js (created)
-  - node_modules/ (created - vitest, jsdom, etc.)
+### Phase 4: CodePlayPanel 1:1 完整复刻 ✅ (this session)
+- **Completed:** 2026-07-16 10:30
+- **Actions taken:**
+  - **CodePlayPanel.php** (404 lines): Full rewrite with multi-tab system, split-pane layout, 6 languages, binary override, 17 output formats
+  - **TabControl.php** (283 lines): Extended with closable/addable flags, × close button (only on active tab + count>1), + add button, rebuildBarAndHandlers
+  - **ComboboxControl.php** (247 lines): Added setOptions() for dynamic updates, fixed root column width+height for parent ALIGN_CENTER row
+  - **Backend.php**: Added jsonToPlist(), codeTransform(), extended jsonToStruct/phpTypeToLangType/camelCase for goBson/jsdoc
+  - **Visual fixes**: Title '代码演练场 ⭐', icon-only buttons (📂/▶/💾 26×26), + button in toolbar far right
+  - **Layout fixes**: Accurate paneH calculation, shrink=1 for textareas/divider, removed ALIGN_CENTER from split row
+  - **Automation verification**: Launched app with UI2_AUTOMATION=true, navigated to CodePlay, dumped full tree via ui_drive
+  - **Geometry verified**: All comboboxes (lang 110×30, bin 80×30, fmt 130×30), buttons (26×26), textareas match split row height
+- **Automation tests:**
+  - Tab close button hidden with 1 tab ✅
+  - Add button in toolbar position ✅
+  - Comboboxes have proper geometry ✅
+  - Split row matches textarea heights ✅
+- **Files modified:**
+  - `app/Native/Panels/CodePlayPanel.php` — full rewrite
+  - `vendor/yangweijie/ui2/src/Widgets/TabControl.php` — extended with closable/addable
+  - `vendor/yangweijie/ui2/src/Widgets/ComboboxControl.php` — fixed width+height, added setOptions()
+  - `app/Native/Backend.php` — added jsonToPlist, codeTransform, goBson/jsdoc support
 
-### Phase 4: CSS 表单控件高度对齐修复
-<!-- 
-  WHAT: 与 Phase 1 相同的结构，用于下一个阶段。
--->
-- **Status:** complete
-- **Started:** 2026-06-30 12:30
-- **Completed:** 2026-07-04 09:52
-- Actions taken:
-  - 诊断问题根因：select 使用系统默认 appearance，忽略 CSS padding
-  - 添加 select { appearance: none } 移除系统样式
-  - 添加自定义 SVG 下拉箭头背景
-  - 统一 input/select/textarea 的 min-height: 34px
-  - 统一 .btn 的 min-height: 34px
-  - 添加 padding-right: 28px 为箭头留空间
-  - 验证 CSS 修改后所有测试仍通过
-- Files created/modified:
-  - assets/css/toolbox.css (updated - lines 52-55)
-
-### Phase 5: 测试自动化与文档
-<!-- 
-  WHAT: 与 Phase 1 相同的结构，用于下一个阶段。
--->
-- **Status:** complete
-- **Started:** 2026-06-30 12:30
-- **Completed:** 2026-06-30 13:00
-- Actions taken:
-  - 添加 composer test 命令（运行 Pest）
-  - 添加 npm test 和 npm run test:all 命令
-  - 创建 overview-testing.md 测试概览文档
-  - 验证所有测试通过（PHP 12 + JS 39 = 51 总测试）
-- Files created/modified:
-  - composer.json (updated - added test script)
-  - package.json (updated - added test scripts)
-  - overview-testing.md (created)
+### Phase 3-5: Remaining
+- QR color/ECC/download
+- WiFi QR full options
+- WS/SSE real client
+- Image Compress upload+compare
+- Toast notification system
+- Drag-drop reorder
+- Import/export
 
 ## Test Results
-<!-- 
-  WHAT: 你运行的测试的表格，你期望什么，实际发生了什么。
-  WHY: 记录功能验证。帮助捕获回归。
-  WHEN: 随着你测试功能时更新，特别是在阶段 4（测试与验证）期间。
-  EXAMPLE:
-    | 添加任务 | python todo.py add "Buy milk" | 任务已添加 | 任务成功添加 | ✓ |
-    | 列出任务 | python todo.py list | 显示所有任务 | 显示所有任务 | ✓ |
--->
-| Test | Input | Expected | Actual | Status |
-|------|-------|----------|--------|--------|
-| Pest PHP 测试 | composer test | 12 个测试通过 | 12 个测试通过（617 断言） | ✓ |
-| Vitest 前端测试 | npm test | 39 个测试通过 | 39 个测试通过 | ✓ |
-| 全部测试 | npm run test:all | 51 个测试通过 | 51 个测试通过 | ✓ |
-| CSS 高度对齐 | 视觉检查 | select/input/button 高度一致 | 需要重启应用验证 | ⚠️ |
-
-## Error Log
-<!-- 
-  WHAT: 遇到的每个错误的详细日志，包括时间戳和解决尝试。
-  WHY: 比 task_plan.md 的错误表格更详细。帮助你从错误中学习。
-  WHEN: 一旦发生错误就立即添加，即使你很快修复了它。
-  EXAMPLE:
-    | 2026-01-15 10:35 | FileNotFoundError | 1 | 添加文件存在检查 |
-    | 2026-01-15 10:37 | JSONDecodeError | 2 | 添加空文件处理 |
--->
-<!-- Keep ALL errors - they help avoid repetition -->
-| Timestamp | Error | Attempt | Resolution |
-|-----------|-------|---------|------------|
-| 2026-06-30 11:00 | Pest 测试断言失败（数组键检查） | 1 | 改用 PHPUnit::hasKey() 和 expect()->toBeIn() |
-| 2026-06-30 11:45 | Vitest 全局变量不同步 | 1 | 使用 globalThis 而非局部变量 |
-| 2026-06-30 12:00 | 测试文件有重复测试块 | 1 | 删除重复的 describe() 块 |
-| 2026-07-04 09:30 | select 高度仍然不对齐 | 2 | 添加 appearance: none 移除系统样式 |
-
-## 5-Question Reboot Check
-<!-- 
-  WHAT: 五个问题，验证你的上下文是否稳固。如果你能回答这些问题，你就能有效地恢复工作。
-  WHY: 这是"重启测试" - 如果你能回答所有 5 个问题，你就可以有效地恢复工作。
-  WHEN: 定期更新，特别是在中断后恢复或上下文重置时。
-  
-  THE 5 QUESTIONS:
-  1. Where am I? → Current phase in task_plan.md
-  2. Where am I going? → Remaining phases
-  3. What's the goal? → Goal statement in task_plan.md
-  4. What have I learned? → See findings.md
-  5. What have I done? → See progress.md (this file)
--->
-<!-- If you can answer these, context is solid -->
-| Question | Answer |
-|----------|--------|
-| Where am I? | Phase 5 complete, Phase 6 pending |
-| Where am I going? | Phase 6 (CI integration) - optional |
-| What's the goal? | 建立完整的 FlyEnv 工具箱测试体系并修复 UI 问题 |
-| What have I learned? | See findings.md |
-| What have I done? | 已完成测试体系建设（51 个测试），修复了 CSS 高度对齐问题 |
-
----
-<!-- 
-  REMINDER: 
-  - 在每个阶段完成后或遇到错误时更新
-  - 要详细 - 这是你的"发生了什么"日志
-  - 包括错误的时间戳以跟踪问题发生的时间
--->
-*Update after completing each phase or encountering errors*
+| Test | Result |
+|------|--------|
+| Pest PHP tests (41) | ✅ |
+| JSON Format | ✅ |
+| JSON Validate | ✅ |
+| JSON Sort Asc | ✅ |
+| JSON Detect type | ✅ |
+| MD Render | ✅ |
+| MD Add tab | ✅ |
+| Diff Compare | ✅ |
+| Diff Sample | ✅ |
+| Diff Swap | ✅ |
+| Diff Clear | ✅ |
+| All navigation | ✅ |
+| CodePlay Tab close | ✅ |
+| CodePlay Add button | ✅ |
+| CodePlay Comboboxes | ✅ |
+| CodePlay Split row | ✅ |

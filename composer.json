@@ -18,14 +18,21 @@
             "email": "917647288@qq.com"
         }
     ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../HelgeSverre-libui-sdk",
+            "options": { "symlink": true }
+        }
+    ],
     "require": {
         "php": "^8.2",
         "chillerlan/php-qrcode": "^6.0",
         "erusev/parsedown": "^1.8",
+        "illuminate/process": "^13.0",
         "kingbes/libui": "*",
         "monolog/monolog": "^3.9",
-        "yangweijie/ui2": "^0.9.0",
-        "illuminate/process": "^13.0"
+        "yangweijie/ui2": "@dev"
     },
     "require-dev": {
         "laravel/pint": "^1.20",
@@ -64,13 +71,34 @@
     ],
     "scripts": {
         "test": "@php vendor/bin/pest",
-        "post-install-cmd": [
-            "@php scripts/check-libui-dylib.php",
-            "@php scripts/patchBase.php"
+        "post-autoload-dump": [
+            "@php vendor/yangweijie/ui2/patch.php"
         ],
-        "post-update-cmd": [
-            "@php scripts/check-libui-dylib.php",
-            "@php scripts/patchBase.php"
+        "build:pebview": [
+            "@php -r \"(PHP_OS_FAMILY === 'Darwin') ? passthru('bash vendor/kingbes/pebview/source/macos.sh') : ((PHP_OS_FAMILY === 'Linux') ? passthru('bash vendor/kingbes/pebview/source/linux.sh') : passthru('cmd /c vendor\\kingbes\\pebview\\source\\build.cmd'));\""
+        ],
+        "build:bridge": [
+            "@php -r \"(PHP_OS_FAMILY === 'Darwin') ? passthru('clang -shared -fobjc-arc bridge/webview_bridge.m vendor/kingbes/pebview/lib/macos/arm64/PebView.dylib -Wl,-rpath,\\$(pwd)/vendor/kingbes/pebview/lib/macos/arm64 -framework Cocoa -o bridge/webview_bridge.dylib') : ((PHP_OS_FAMILY === 'Linux') ? passthru('gcc -shared -fPIC bridge/webview_bridge_linux.c -o bridge/webview_bridge.so $(pkg-config --cflags --libs gtk+-3.0)') : passthru('gcc -shared bridge/webview_bridge_win.c -o bridge/webview_bridge.dll -luser32'));\""
+        ],
+        "build:ime": [
+            "@php -r \"(PHP_OS_FAMILY === 'Darwin') ? passthru('clang -dynamiclib -fobjc-arc -framework Foundation -framework AppKit -framework QuartzCore bridge/ime_bridge.m -o bridge/ime_bridge.dylib') : ((PHP_OS_FAMILY === 'Linux') ? passthru('gcc -shared -fPIC bridge/ime_bridge_linux.c -o bridge/ime_bridge.so \\$(pkg-config --cflags --libs gtk+-3.0)') : passthru('gcc -shared bridge/ime_bridge_win.c -o bridge/ime_bridge.dll -luser32 -lgdi32'));\""
+        ],
+        "build": [
+            "@composer build:pebview",
+            "@composer build:bridge",
+            "@composer build:ime"
+        ],
+        "install:opencode": [
+            "@php vendor/yangweijie/ui2/scripts/install-opencode.php"
+        ],
+        "build:phar": [
+            "@php vendor/yangweijie/ui2/scripts/build-phar.php"
+        ],
+        "build:binary": [
+            "@php vendor/yangweijie/ui2/scripts/build-binary.php"
+        ],
+        "install:spc": [
+            "@php -r \"if (PHP_OS_FAMILY === 'Windows') { passthru(__DIR__ . '/vendor/yangweijie/ui2/scripts/install-spc.bat'); } else { passthru('bash ' . __DIR__ . '/vendor/yangweijie/ui2/scripts/install-spc.sh'); }\""
         ]
     }
 }

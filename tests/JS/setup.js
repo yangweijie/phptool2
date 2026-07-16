@@ -120,11 +120,7 @@ function createDOM() {
     el.id = id; document.body.appendChild(el);
   });
 
-  // BOM panel
-  ['bI2','bO2'].forEach(id => {
-    const el = document.createElement('textarea');
-    el.id = id; document.body.appendChild(el);
-  });
+  // BOM Clean panel (elements are created by __p.bom() at render time)
 
   // Markdown panel
   ['mI2','mO2'].forEach(id => {
@@ -169,9 +165,25 @@ function createDOM() {
   });
 
   // Image compress / capture
-  ['iI','iQ','iW','iO','cO4','fI','fO','tI2','tO2','sI','sO','sCN','sDay','sBits','sO2','obI','obO','rB','rO2'].forEach(id => {
+  ['iI','iQ','iW','iO','cO4','fO','tI2','tO2','sI','sO','sCN','sDay','sBits','sO2','obResult','rB','rO2'].forEach(id => {
     const el = document.createElement('div');
     el.id = id; document.body.appendChild(el);
+  });
+
+  // System Environment
+  ['envList','envEditor','envEditorModal','envEditorTitle','envSaveBtn'].forEach(id => {
+    const el = document.createElement('div');
+    el.id = id; document.body.appendChild(el);
+  });
+
+  // Site Sucker (DOM is rebuilt by __p.suck(), but init hooks need these present)
+  ['ssUrl','ssRunBtn','ssOpenBtn','ssStat','ssLinks','ssHosts','ssSearch','ssHostSearch',
+   'ssSetModal','ssDir','ssWin','ssProxy','ssTimeout','ssMaxImg','ssMaxVideo','ssPageLimit','ssExclude'
+  ].forEach(id => {
+    const el = document.createElement(id === 'ssUrl' ? 'input' : 'div');
+    el.id = id;
+    if (el.tagName === 'INPUT') el.value = '';
+    document.body.appendChild(el);
   });
 
   // Regex panel
@@ -215,7 +227,10 @@ createDOM();
 // Load i18n first (pure data + _t function)
 loadJS('toolbox-i18n.js');
 
-// Load panels (panel HTML templates, depends on _t)
+// Load Element Plus UI helpers (EP.* used by panel templates)
+loadJS('ep-ui.js');
+
+// Load panels (panel HTML templates, depends on _t and EP)
 loadJS('toolbox-panels.js');
 
 // Set up TOOLS, CATS, PMAP globals for toolbox-logic
@@ -238,3 +253,32 @@ globalThis.favs = [];
 
 // Load logic (depends on TOOLS, CATS, PMAP, DOM, _t)
 loadJS('toolbox-logic.js');
+
+// ── CodeMirror mock (real lib is inlined only in the webview build) ──
+// Provides just enough API for createCodeEditor()/attachMinimap() to run in jsdom.
+globalThis.CodeMirror = function (place, opts) {
+  var el = (typeof place === 'string') ? document.getElementById(place) : place;
+  var ta = document.createElement('textarea');
+  ta.style.display = 'none';
+  if (el && el.appendChild) el.appendChild(ta);
+  var handlers = {};
+  var cm = {
+    _ta: ta,
+    getValue: function () { return ta.value; },
+    setValue: function (v) {
+      ta.value = (v == null ? '' : String(v));
+      if (handlers.changes) handlers.changes.forEach(function (f) { f(); });
+    },
+    on: function (ev, fn) { (handlers[ev] = handlers[ev] || []).push(fn); },
+    refresh: function () {},
+    scrollTo: function () {},
+    getScrollInfo: function () { return { top: 0, height: 100, clientHeight: 50 }; },
+    replaceSelection: function () {},
+    clearHistory: function () {},
+    getWrapperElement: function () { return el; }
+  };
+  return cm;
+};
+globalThis.CodeMirror.defineMode = function () {};
+globalThis.CodeMirror.defineMIME = function () {};
+globalThis.CodeMirror.registerHelper = function () {};

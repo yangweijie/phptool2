@@ -32,6 +32,7 @@ class FlyEnvWebApp
             ['id'=>'FileInfo','cat'=>'Development','name'=>'File Info','icon'=>'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2"/></svg>'],
             ['id'=>'BomClean','cat'=>'Development','name'=>'BOM Clean','icon'=>'<svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h12M3 18h6" fill="none" stroke="currentColor" stroke-width="2"/></svg>'],
             ['id'=>'PhpObfuscator','cat'=>'Development','name'=>'PHP Obfuscator','icon'=>'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 9l3 3-3 3M15 9l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>'],
+            ['id'=>'SystemEnv','cat'=>'Development','name'=>'System Env','icon'=>'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 13h8M8 17h5" fill="none" stroke="currentColor" stroke-width="2"/></svg>'],
             ['id'=>'SiteSucker','cat'=>'Development','name'=>'Site Sucker','icon'=>'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" fill="none" stroke="currentColor" stroke-width="2"/></svg>'],
             ['id'=>'RequestTime','cat'=>'Development','name'=>'URL Timing','icon'=>'<svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4" fill="none" stroke="currentColor" stroke-width="2"/></svg>'],
             ['id'=>'SSLMake','cat'=>'Development','name'=>'SSL Make','icon'=>'<svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>'],
@@ -60,12 +61,12 @@ class FlyEnvWebApp
         $this->panelMap = [
             'diff-compare'=>'diff','cron-parser'=>'cron','JsonParse'=>'json','jwt-encoder-decoder'=>'jwt',
             'HashText'=>'hash','EncryptDecryptText'=>'encrypt','Timestamp'=>'ts','base64-string-converter'=>'b64',
-            'url-encode'=>'url','escape-html'=>'html','regex-tester'=>'regex','chmod-calculator'=>'chmod',
+            'url-encode'=>'url','url-parse'=>'urlparse','escape-html'=>'html','regex-tester'=>'regex','chmod-calculator'=>'chmod',
             'TokenGenerator'=>'token','http-status-codes'=>'http','mime-types'=>'mime','BomClean'=>'bom',
             'MarkdownPreview'=>'md','websocket-sse'=>'wss','CodePlay'=>'code','CodeLibrary'=>'clib',
-            'url-parse'=>'url','qr-code-generator'=>'qr','wifi-qr-code-generator'=>'wifi','ImageCompress'=>'img',
+            'qr-code-generator'=>'qr','wifi-qr-code-generator'=>'wifi','ImageCompress'=>'img',
             'Capturer'=>'capture','rsa-key-generator'=>'rsa','FileInfo'=>'file','RequestTime'=>'timing',
-            'SiteSucker'=>'suck','SSLMake'=>'ssl','PhpObfuscator'=>'obf',
+            'SiteSucker'=>'suck','SSLMake'=>'ssl','PhpObfuscator'=>'obf','SystemEnv'=>'env',
             'PortKill'=>'portkill','ProcessKill'=>'prockill',
             'regex-cheatsheet'=>'regex_memo','git-cheatsheet'=>'git_memo',
             'keycode-info'=>'keycode',
@@ -75,9 +76,17 @@ class FlyEnvWebApp
     public function getHtml(): string
     {
         $css = file_get_contents(__DIR__ . '/../assets/css/toolbox.css');
+        $epCss = file_get_contents(__DIR__ . '/../assets/css/ep.css');
         $i18n = file_get_contents(__DIR__ . '/../assets/js/toolbox-i18n.js');
+        $epUi = file_get_contents(__DIR__ . '/../assets/js/ep-ui.js');
         $panels = file_get_contents(__DIR__ . '/../assets/js/toolbox-panels.js');
         $logic = file_get_contents(__DIR__ . '/../assets/js/toolbox-logic.js');
+        $gitMemo = @file_get_contents(__DIR__ . '/../assets/md/git-memo.en.md') ?: '';
+        $cmCss = file_get_contents(__DIR__ . '/../assets/editor/cm-core.css');
+        $cmTheme = file_get_contents(__DIR__ . '/../assets/editor/cm-theme.css');
+        $cmCore = file_get_contents(__DIR__ . '/../assets/editor/cm-core.js');
+        $cmShell = file_get_contents(__DIR__ . '/../assets/editor/cm-mode-shell.js');
+        $cmProps = file_get_contents(__DIR__ . '/../assets/editor/cm-mode-properties.js');
         $data = json_encode($this->tools);
         $cats = json_encode($this->categories);
         $pmap = json_encode($this->panelMap);
@@ -87,9 +96,13 @@ class FlyEnvWebApp
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>FlyEnv Toolbox</title>
-<style>{$css}</style></head>
+<style>{$css}</style>
+<style>{$epCss}</style>
+<style>{$cmCss}</style>
+<style>{$cmTheme}</style></head>
 <body>
 <div id="app"><div class="layout">
+  <script type="text/markdown" id="gitMemoRaw">{$gitMemo}</script>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">TOOLS</div>
     <div class="sidebar-tree" id="sidebarTree">{$tree}</div>
@@ -108,11 +121,15 @@ class FlyEnvWebApp
     </div>
   </main>
 </div></div>
+<script>{$cmCore}</script>
+<script>{$cmShell}</script>
+<script>{$cmProps}</script>
 <script>
 var TOOLS = {$data};
 var CATS = {$cats};
 var PMAP = {$pmap};
 {$i18n}
+{$epUi}
 {$panels}
 {$logic}
 initApp();

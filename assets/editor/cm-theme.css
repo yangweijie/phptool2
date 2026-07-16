@@ -1,0 +1,48 @@
+/* CodeMirror dark theme — VS Code Dark+ (matches official FlyEnv editor) */
+.CodeMirror {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  height: 100%;
+  font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.CodeMirror-gutters {
+  background: #252526;
+  border-right: 1px solid #3c3c3c;
+}
+.CodeMirror-linenumber { color: #858585; }
+.CodeMirror-cursor { border-left: 1px solid #aeafad; }
+.CodeMirror-selected,
+.CodeMirror-focused .CodeMirror-selected { background: rgba(255, 255, 255, .15); }
+.CodeMirror-activeline-background { background: rgba(255, 255, 255, .04); }
+.CodeMirror-matchingbracket { color: #ffd700 !important; font-weight: 700; }
+
+/* Token colors — VS Code Dark+ */
+.cm-comment { color: #6a9955; font-style: italic; }
+.cm-def, .cm-variable { color: #9cdcfe; }
+.cm-variable-2 { color: #4fc1ff; }
+.cm-variable-3 { color: #d7ba7d; }
+.cm-keyword { color: #569cd6; }
+.cm-string, .cm-string-2 { color: #ce9178; }
+.cm-property { color: #9cdcfe; }
+.cm-atom { color: #b5cea8; }
+.cm-number { color: #b5cea8; }
+.cm-operator { color: #d4d4d4; }
+.cm-builtin { color: #4ec9b0; }
+.cm-meta { color: #d7ba7d; }
+.cm-tag { color: #569cd6; }
+.cm-attribute { color: #9cdcfe; }
+.cm-link { color: #3794ff; text-decoration: underline; }
+.cm-qualifier { color: #d7ba7d; }
+
+/* minimap canvas */
+.env-mini {
+  width: 92px;
+  height: 100%;
+  flex: 0 0 auto;
+  background: #1e1e1e;
+  border-left: 1px solid #3c3c3c;
+  cursor: pointer;
+  display: block;
+}
