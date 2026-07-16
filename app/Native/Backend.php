@@ -1380,16 +1380,26 @@ func main() {
         return $rows;
     }
 
-    public static function portKillPids(array $pids): string
+    /**
+     * @return array{killed:int, attempted:int, details:list<array{pid:int, killed:bool, error:string}>}
+     */
+    public static function portKillPids(array $pids): array
     {
-        $killed = 0; $failed = 0;
+        $killed = 0; $attempted = 0; $details = [];
         foreach ($pids as $pid) {
             $pid = (int) $pid;
             if ($pid <= 0) continue;
-            exec("kill -9 {$pid} 2>/dev/null", $out, $code);
-            if ($code === 0) $killed++; else $failed++;
+            $attempted++;
+            exec("kill -9 {$pid} 2>&1", $out, $code);
+            $ok = ($code === 0);
+            if ($ok) $killed++; 
+            $details[] = [
+                'pid' => $pid,
+                'killed' => $ok,
+                'error' => $ok ? '' : trim(implode("\n", $out) ?: 'Operation not permitted'),
+            ];
         }
-        return "Killed {$killed} process(es)" . ($failed > 0 ? " ({$failed} failed)" : '');
+        return ['killed' => $killed, 'attempted' => $attempted, 'details' => $details];
     }
 
     // ── Process Kill (search/list version) ────────────────────────────
@@ -1417,15 +1427,25 @@ func main() {
         return $rows;
     }
 
-    public static function processKillPids(array $pids): string
+    /**
+     * @return array{killed:int, attempted:int, details:list<array{pid:int, killed:bool, error:string}>}
+     */
+    public static function processKillPids(array $pids): array
     {
-        $killed = 0; $failed = 0;
+        $killed = 0; $attempted = 0; $details = [];
         foreach ($pids as $pid) {
             $pid = (int) $pid;
             if ($pid <= 0) continue;
-            exec("kill -9 {$pid} 2>/dev/null", $out, $code);
-            if ($code === 0) $killed++; else $failed++;
+            $attempted++;
+            exec("kill -9 {$pid} 2>&1", $out, $code);
+            $ok = ($code === 0);
+            if ($ok) $killed++;
+            $details[] = [
+                'pid' => $pid,
+                'killed' => $ok,
+                'error' => $ok ? '' : trim(implode("\n", $out) ?: 'Operation not permitted'),
+            ];
         }
-        return "Killed {$killed} process(es)" . ($failed > 0 ? " ({$failed} failed)" : '');
+        return ['killed' => $killed, 'attempted' => $attempted, 'details' => $details];
     }
 }

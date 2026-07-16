@@ -24,7 +24,11 @@
 - **Pest:** 41 passed, 859 assertions
 - **Lint:** All 5 new/modified files clean
 
-### Phase 4: CodePlayPanel 1:1 完整复刻 ✅ (this session)
+### Phase 3: QR/WiFi QR 1:1 完整复刻 ✅ (previous)
+- **QR Code (QrCodePanel)**: fg/bg color picker, ECC level, live preview, download PNG
+- **WiFi QR (WifiQrPanel)**: encryption type, EAP methods, password toggle, color pickers, hidden network
+
+### Phase 4: CodePlayPanel 1:1 完整复刻 ✅ (previous)
 - **Completed:** 2026-07-16 10:30
 - **Actions taken:**
   - **CodePlayPanel.php** (404 lines): Full rewrite with multi-tab system, split-pane layout, 6 languages, binary override, 17 output formats
@@ -46,7 +50,21 @@
   - `vendor/yangweijie/ui2/src/Widgets/ComboboxControl.php` — fixed width+height, added setOptions()
   - `app/Native/Backend.php` — added jsonToPlist, codeTransform, goBson/jsdoc support
 
-### Phase 3-5: Remaining
+### Phase 6: ProcessKill/PortKill 布局修复 + 自动化修复 ✅ (this session)
+- **Completed:** 2026-07-16 14:30
+- **Actions taken:**
+  - **Root Cause:** `$tableCol` column in ProcessKillPanel/PortKillPanel created without explicit height
+  - **FlexLayout Behavior:** Column-in-column without height → basis=0 → FlexLayout collapses parent to 0
+  - **Fix:** Added `computeTableHeight()` static method to both panels, called after populating children:
+    ```php
+    $tableCol->style->height = self::computeTableHeight($tableCol);
+    ```
+  - **AutomationServer.php Fix:** HTTP `/drive` endpoint was passing full JSON body to driveHandler instead of unwrapping `payload['payload']`
+  - **Verification:** ProcessKillPanel automation confirmed `prockill:table` h=720.1 (was h=0) ✅
+  - **Headless Tests:** 5/5 tests pass for computeTableHeight logic
+  - **BackendTest:** 45/45 tests pass (81 assertions)
+
+### Phase 7-8: Remaining
 - QR color/ECC/download
 - WiFi QR full options
 - WS/SSE real client
@@ -58,7 +76,13 @@
 ## Test Results
 | Test | Result |
 |------|--------|
-| Pest PHP tests (41) | ✅ |
+| Pest PHP tests (45) | ✅ |
+| computeTableHeight empty | ✅ |
+| computeTableHeight 1 row | ✅ |
+| computeTableHeight header+rows | ✅ |
+| computeTableHeight basis+height | ✅ |
+| computeTableHeight 100 rows | ✅ |
+| ProcessKillPanel automation | ✅ |
 | JSON Format | ✅ |
 | JSON Validate | ✅ |
 | JSON Sort Asc | ✅ |
