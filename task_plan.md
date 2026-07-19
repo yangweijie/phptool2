@@ -29,12 +29,18 @@
 - Image Compress: upload, before/after 🔲
 - SiteSucker: progress 🔲
 
-### Phase 5: 全局 UX—Toast, 拖放, 导入导出 🔲
+### Phase 5: CodeLibraryPanel 布局修复 ✅
+- **Completed:** 2026-07-20 10:30
+- Title bar + tabs now always visible (outside ScrollViewControl)
+- Auto-select first group on load + tab switch
+- 87/87 tests pass (955 assertions)
+
+### Phase 6: 全局 UX—Toast, 拖放, 导入导出 🔲
 - Toast notifications
 - Drag-drop reorder
 - Import/export
 
-### Phase 6: ProcessKill/PortKill 布局修复 ✅
+### Phase 7: ProcessKill/PortKill 布局修复 ✅
 - **Completed:** 2026-07-16 14:30
 - **Actions taken:**
   - **Root Cause:** `$tableCol` column created without explicit height → FlexLayout collapses to 0
@@ -44,7 +50,7 @@
   - **Tests:** 5/5 headless tests pass, BackendTest 45/45 pass
   - **PortKillPanel:** Same fix applied, needs visual verification
 
-### Phase 7: 验证 🔲
+### Phase 8: 验证 🔲
 - Full automation test suite
 - Manual visual comparison
 

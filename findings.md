@@ -59,6 +59,8 @@
 | 统一表单控件高度为 34px | 确保视觉对齐，提升 UI 一致性 |
 | 移除 select 系统样式 | 允许 CSS 完全控制高度和外观 |
 | 使用 globalThis 而非局部变量 | 确保 Vitest 测试中全局变量同步 |
+| 标题栏固定在顶部 | 将 titleBar/tabBar 放到 ScrollViewControl 外层 column，内容区域单独滚动 |
+| ui2 列中列必须设高度 | FlexLayout 对 column-in-column 无高度时 basis=0 导致折叠为0 |
 
 ## Issues Encountered
 <!-- 
@@ -76,6 +78,10 @@
 | select 高度仍然不对齐 | 添加 appearance: none 移除系统样式 |
 | CSS 修改后需要重启应用 | CSS 内联到 HTML，运行时不会重新读取文件 |
 | 测试文件有重复测试块 | 删除重复的 describe() 块 |
+| CodeLibraryPanel 标题栏+标签不可见 | 将 titleBar/tabBar 移出 ScrollViewControl，放到外层 column |
+| CodeLibraryPanel 初始加载空状态 | 添加 auto-select first group 逻辑（lines 59-65） |
+| ui2 FlexLayout 列中列无高度→折叠为0 | 必须显式设置 column->style->height |
+| ScrollViewControl padding 在视口内部 | padding 添加在 viewport row 内部，不是外部 |
 
 ## Resources
 <!-- 
@@ -93,6 +99,8 @@
 - CSS appearance 属性：https://developer.mozilla.org/en-US/docs/Web/CSS/appearance
 - FlyEnv 工具箱项目：/Volumes/data/git/php/phptools2/
 - 测试文件：tests/Unit/FlyEnvWebAppTest.php、tests/JS/toolbox.test.js
+- CodeLibraryPanel: app/Native/Panels/CodeLibraryPanel.php (~881 lines)
+- ScrollViewControl: vendor/yangweijie/ui2/src/Widgets/ScrollViewControl.php (282 lines)
 
 ## Visual/Browser Findings
 <!-- 

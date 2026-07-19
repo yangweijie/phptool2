@@ -277,3 +277,19 @@ test('chmodToBits and chmodFromBits roundtrip', function () {
     $r = Backend::chmodFromBits($bits);
     expect($r['octal'])->toBe('644');
 });
+
+test('scanBinaries returns non-empty for PHP and Java on macOS', function () {
+    $php  = Backend::scanBinaries('PHP');
+    $java = Backend::scanBinaries('Java');
+    expect($php)->toBeArray();
+    expect($java)->toBeArray();
+    expect(count($php) + count($java))->toBeGreaterThan(0);
+    // All results must be "Label /path" format
+    foreach (array_merge($php, $java) as $item) {
+        expect($item)->toMatch('/^[\w\-\.]+ \//');
+    }
+    // No -config binaries
+    foreach (array_merge($php, $java) as $item) {
+        expect($item)->not->toMatch('/-config$/');
+    }
+});

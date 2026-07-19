@@ -984,6 +984,143 @@ final class Backend
         }
     }
 
+    /**
+     * Scan the system for installed binaries of the given language.
+     *
+     * Returns a list of "label /path" strings (e.g. "Java-25.0.2 /opt/homebrew/opt/openjdk@25/bin/java").
+     * Returns ["—"] if nothing is found.
+     *
+     * @return list<string>
+     */
+    public static function scanBinaries(string $lang): array
+    {
+        $results = [];
+
+        $searchDirs = [
+            '/opt/homebrew/bin',
+            '/opt/homebrew/opt',
+            '/usr/local/bin',
+            '/usr/local/opt',
+            '/usr/bin',
+            '/usr/sbin',
+            '/bin',
+        ];
+
+        $langMap = match ($lang) {
+            'PHP'     => ['php'],
+            'Python'  => ['python3', 'python'],
+            'Node.js' => ['node'],
+            'Go'      => ['go'],
+            'Rust'    => ['rustc'],
+            'Java'    => ['java'],
+            default   => [],
+        };
+
+        foreach ($langMap as $binaryName) {
+            // 1) `which` the default binary
+            $which = shell_exec("which " . escapeshellarg($binaryName) . " 2>/dev/null");
+            if ($which !== null && trim($which) !== '') {
+                $path = trim($which);
+                // Skip config/auxiliary binaries
+                $baseName = basename($path);
+                if (str_ends_with($baseName, '-config') || str_ends_with($baseName, '-dbg')) continue;
+                $label = self::tryVersionLabel($binaryName, $path);
+                $results[] = $label . " " . $path;
+            }
+
+            // 2) Glob common versioned installs in brew/opt directories
+            if ($lang === 'Java') {
+                // macOS java_home
+                $javaHome = shell_exec('/usr/libexec/java_home -F 2>/dev/null');
+                if ($javaHome !== null && trim($javaHome) !== '') {
+                    $hm = trim($javaHome);
+                    $jpath = $hm . '/bin/java';
+                    if (is_executable($jpath)) {
+                        $jl = self::tryVersionLabel('java', $jpath);
+                        $results[] = $jl . " " . $jpath;
+                    }
+                }
+                // List all java versions
+                $allJava = shell_exec('/usr/libexec/java_home -V 2>&1');
+                if ($allJava !== null) {
+                    foreach (explode("\n", $allJava) as $line) {
+                        if (str_contains($line, '/Contents/Home')) {
+                            // Extract path: "   /path/Contents/Home (Java 25.0.2)"
+                            $parts = explode('(', $line);
+                            $jhm = trim($parts[0]);
+                            $ver = count($parts) > 1 ? trim(str_replace('Java ', '', str_replace(')', '', $parts[1]))) : '';
+                            $jpath2 = $jhm . '/bin/java';
+                            if (is_executable($jpath2)) {
+                                $jl2 = $ver !== '' ? 'Java-' . $ver : 'Java';
+                                $results[] = $jl2 . " " . $jpath2;
+                            }
+                        }
+                    }
+                }
+                // Also scan /opt/homebrew/opt/openjdk*
+                foreach (glob('/opt/homebrew/opt/openjdk*') as $dir) {
+                    $jpath3 = $dir . '/bin/java';
+                    if (is_executable($jpath3)) {
+                        $ver2 = basename($dir); // e.g. openjdk@25
+                        $jl3 = $ver2 !== '' ? 'Java-' . ltrim($ver2, 'openjdk@') : 'Java';
+                        $results[] = $jl3 . " " . $jpath3;
+                    }
+                }
+            } else {
+                // For non-Java, glob versioned installs
+                foreach ($searchDirs as $d) {
+                    if (!is_dir($d)) continue;
+                    $pattern = $d . '/' . $binaryName . '[0-9]*';
+                    foreach (glob($pattern) as $full) {
+                        // Skip config/auxiliary binaries
+                        $baseName = basename($full);
+                        if (str_ends_with($baseName, '-config') || str_ends_with($baseName, '-dbg') || str_ends_with($baseName, '-valgrind')) continue;
+                        if (is_executable($full)) {
+                            $lbl = self::tryVersionLabel($binaryName, $full);
+                            $results[] = $lbl . " " . $full;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Deduplicate by path
+        $seen = [];
+        $unique = [];
+        foreach ($results as $r) {
+            $path = substr($r, strrpos($r, ' ') + 1);
+            if (!isset($seen[$path])) {
+                $seen[$path] = true;
+                $unique[] = $r;
+            }
+        }
+
+        return $unique;
+    }
+
+    /** Try to extract a version label from binary --version output. */
+    private static function tryVersionLabel(string $name, string $path): string
+    {
+        $verOut = shell_exec(escapeshellcmd($path) . ' --version 2>/dev/null');
+        if ($verOut === null) return $name;
+        $line = explode("\n", $verOut)[0] ?? '';
+        // Extract version number like "25.0.2", "3.12.1", "v22.1.0"
+        if (preg_match('/(\d+\.\d+(?:\.\d+)?)/', $line, $m)) {
+            $v = $m[1];
+            return match ($name) {
+                'java' => 'Java-' . $v,
+                'php'  => 'PHP-' . $v,
+                'python3' => 'Python-' . $v,
+                'python' => 'Python-' . $v,
+                'node' => 'Node-' . $v,
+                'go' => 'Go-' . $v,
+                'rustc' => 'Rust-' . $v,
+                default => $name,
+            };
+        }
+        return $name;
+    }
+
     public static function codeRun(string $code, string $lang, string $binary = ''): string
     {
         if (trim($code) === '') return '';

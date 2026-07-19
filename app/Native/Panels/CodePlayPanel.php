@@ -70,6 +70,7 @@ final class CodePlayPanel implements Panel
     private static ?TabControl $tabControlRef = null;
     private static ?ComboboxControl $langComboRef = null;
     private static ?ComboboxControl $binComboRef = null;
+    private static ?LayoutNode $toolbarRef = null;
 
     // ═══════════════════════════════════════════════════════════════════════
     //  build()
@@ -103,10 +104,11 @@ final class CodePlayPanel implements Panel
             $tcTabs[] = ['id' => $t['name'], 'label' => $t['name'], 'content' => LayoutNode::leaf(null, null)];
         }
         $tabControl = new TabControl("{$key}:tabs", $tcTabs, self::$activeTab,
-            tabHeight: $tabbarH, panelHeight: 0, closable: true, addable: false);
+            tabHeight: $tabbarH, panelHeight: 0, closable: true, addable: true);
         $tabControl->bind($surface)
             ->onChange(fn (int $i) => $this->switchTab($i))
-            ->onCloseTab(fn (int $i) => $this->closeTab($surface, $i));
+            ->onCloseTab(fn (int $i) => $this->closeTab($surface, $i))
+            ->onAddTab(function () use ($surface): void { $this->addTab($surface); });
         self::$tabControlRef = $tabControl;
 
         $tabBar = $tabControl->root();
@@ -120,31 +122,39 @@ final class CodePlayPanel implements Panel
         //  Toolbar — single row spanning full width
         // ═══════════════════════════════════════════════════════════════
 
-        // Language combobox
-        $langCombo = new ComboboxControl("{$key}:lang", self::$langs,
-            value: $lang, width: 110, height: $toolbarH);
-        $langCombo->bind($surface)->onChange(function (string $v) use ($surface, $key): void {
-            self::$tabs[self::$activeTab]['lang'] = $v;
-            $newBinOpts = self::$langBinaries[$v] ?? ['—'];
-            $binCombo = self::$binComboRef;
-            if ($binCombo !== null) {
-                $binCombo->setOptions($newBinOpts);
-                $binCombo->setValue($newBinOpts[0], true);
-            }
-            self::$tabs[self::$activeTab]['binary'] = '';
-            $surface->redraw();
-        });
-        self::$langComboRef = $langCombo;
-
-        // Binary override combobox
-        $binOpts = self::$langBinaries[$lang] ?? ['—'];
-        $binCombo = new ComboboxControl("{$key}:bin", $binOpts,
-            value: $binary ?: '—', width: 80, height: $toolbarH);
+        // Binary override combobox — width scales with window so field shows more chars
+        // Toolbar fixed elements: lang(110) + open(26) + run(26) + formatLabel(48) + fmt(130) + save(26) = 366 + gaps
+        // Leave at least 40 px for midSpacer so toolbar doesn't look cramped
+        $binW = min(max(100.0, $w * 0.25), 450.0);
+        $binCombo = new ComboboxControl("{$key}:bin", ['—'],
+            value: '—', width: $binW, height: $toolbarH, readonly: true);
         $binCombo->bind($surface)->onChange(function (string $v) use ($surface, $key): void {
             self::$tabs[self::$activeTab]['binary'] = $v === '—' ? '' : $v;
             $surface->redraw();
         });
         self::$binComboRef = $binCombo;
+
+        // Language combobox
+        $langCombo = new ComboboxControl("{$key}:lang", self::$langs,
+            value: $lang, width: 110, height: $toolbarH, readonly: true);
+        $langCombo->bind($surface)->onChange(function (string $v) use ($surface, $key, $binCombo): void {
+            self::$tabs[self::$activeTab]['lang'] = $v;
+            $scanned = Backend::scanBinaries($v);
+            $newBinOpts = array_merge(["—"], $scanned);
+            $binCombo->setOptions($newBinOpts);
+            $binCombo->setMinPanelWidth(self::calculateBinPanelWidth($newBinOpts));
+            $binCombo->setValue($newBinOpts[0], true);
+            self::$tabs[self::$activeTab]['binary'] = '';
+            $surface->redraw();
+        });
+        self::$langComboRef = $langCombo;
+
+        // Populate binaries for the current language (and on every language change)
+        $scanned = Backend::scanBinaries($lang);
+        $binOpts = array_merge(["—"], $scanned);
+        $binCombo->setOptions($binOpts);
+        $binCombo->setMinPanelWidth(self::calculateBinPanelWidth($binOpts));
+        $binCombo->setValue($binary ?: '—', true);
 
         // Format combobox
         $fmtCombo = new ComboboxControl("{$key}:fmt", self::$formats,
@@ -158,18 +168,9 @@ final class CodePlayPanel implements Panel
             }
             $surface->redraw();
         });
-
-        // Add button (+) — at far right of toolbar
-        $addBtn = Ui::button("{$key}:add", '+', 'soft', 26, 26);
-        $surface->onClick("{$key}:add", function () use ($surface): void { $this->addTab($surface); });
-
         // Spacer between run and Format (grows to fill space)
         $midSpacer = LayoutNode::leaf(null, null, height: 1.0);
         $midSpacer->style->grow = 1.0;
-
-        // Small gap before +
-        $rightGap = LayoutNode::leaf(null, null, width: 8.0, height: 1.0);
-
         // Single toolbar row matching original layout
         $toolbar = Ui::row([
             $langCombo->root(),
@@ -180,9 +181,8 @@ final class CodePlayPanel implements Panel
             Ui::label('Format:', 48, 12, 26),
             $fmtCombo->root(),
             Ui::button("{$key}:save", '💾', 'soft', 26, 26),
-            $rightGap,
-            $addBtn,
         ], gap: 4, height: $toolbarH);
+        self::$toolbarRef = $toolbar;
 
         // ═══════════════════════════════════════════════════════════════
         //  Left pane — input
@@ -267,6 +267,20 @@ final class CodePlayPanel implements Panel
         return self::$tabs[self::$activeTab] ?? self::$tabs[0];
     }
 
+    /** Calculate minimum panel width (in px) to fit the longest option.
+     *  Rough estimate: ~7.5px per char at 12px font, plus 16px padding.
+     */
+    private static function calculateBinPanelWidth(array $options): float
+    {
+        $longest = '';
+        foreach ($options as $opt) {
+            if (mb_strlen($opt) > mb_strlen($longest)) {
+                $longest = $opt;
+            }
+        }
+        return max(80.0, mb_strlen($longest) * 7.5 + 16);
+    }
+
     // ── Tab operations ──────────────────────────────────────────────────────
 
     private function switchTab(int $ti): void
@@ -339,7 +353,8 @@ final class CodePlayPanel implements Panel
 
         $binCombo = self::$binComboRef;
         if ($binCombo !== null) {
-            $binOpts = self::$langBinaries[$tab['lang']] ?? ['—'];
+            $scanned = Backend::scanBinaries($tab['lang']);
+            $binOpts = array_merge(['—'], $scanned);
             $binCombo->setOptions($binOpts);
             $binCombo->setValue($tab['binary'] ?: '—', false);
         }

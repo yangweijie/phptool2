@@ -98,3 +98,15 @@
 | CodePlay Add button | ✅ |
 | CodePlay Comboboxes | ✅ |
 | CodePlay Split row | ✅ |
+
+### Phase 5: CodeLibraryPanel (代码图书馆) 布局修复 ✅ (this session)
+- **Completed:** 2026-07-20 10:30
+- **Actions taken:**
+  - **Root Cause 1: Title bar + tabs invisible** — All children (titleBar, tabBar, contentRow, batchBar) were wrapped in a single ScrollViewControl with padding:24.0. FlexLayout clips content at parent boundary, so fixed-height items at top got pushed below the viewport.
+  - **Root Cause 2: Empty state on load** — No auto-select logic for first group, so main area showed "📦 暂无数据" instead of group items.
+  - **Fix 1: Restructure build()** — Moved $titleBar + $tabBar OUTSIDE ScrollViewControl. Now: outerCol = Ui::column([$titleBar, $tabBar, $sv->root()], gap:6.0) with fixed height. Title bar + tabs always visible, only content scrolls.
+  - **Fix 2: Auto-select first group** — Added logic at lines 59-65: if selectedGroupId is empty, picks first group for current langType. On tab switch, clears selection and auto-selects first group of new language.
+  - **ScrollViewControl understanding** — Verified it wraps content in viewport row (ALIGN_START) + content column (with gap/padding). Padding in ScrollViewControl adds INSIDE the viewport, not outside.
+  - **Tests:** 87/87 Pest tests pass (955 assertions) — no regressions
+- **Files modified:**
+  - `app/Native/Panels/CodeLibraryPanel.php` — build() restructured (lines 84-106), auto-select first group (lines 59-65)

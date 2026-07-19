@@ -148,6 +148,11 @@ final class NativeApp
                 $this->openTool('SystemEnv');
             }
         };
+        $this->panels['codelib']->onRebuild = function (): void {
+            if ($this->currentTool === 'CodeLibrary') {
+                $this->openTool('CodeLibrary');
+            }
+        };
     }
 
     private function t(string $toolId): string
