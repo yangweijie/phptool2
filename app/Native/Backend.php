@@ -92,6 +92,13 @@ final class Backend
     public static function jsonConvert(string $text, string $format, string $sort = 'none'): string
     {
         $dec = json_decode($text, true);
+        // Fallback: try PHP array syntax → JSON
+        if ($dec === null && $text !== 'null' && json_last_error() !== JSON_ERROR_NONE) {
+            $json = self::phpToJson($text);
+            if ($json !== null) {
+                $dec = json_decode($json, true);
+            }
+        }
         if ($dec === null && $text !== 'null' && json_last_error() !== JSON_ERROR_NONE) {
             return 'JSON Error: ' . json_last_error_msg();
         }
@@ -172,6 +179,49 @@ final class Backend
             return $sorted;
         }
         return $v;
+    }
+
+    /** Convert PHP array syntax to JSON string. Returns null on failure. */
+    public static function phpToJson(string $input): ?string
+    {
+        $t = $input;
+        // Strip PHP tags and leading return/semicolon
+        $t = preg_replace('/<\?php\s*/', '', $t);
+        $t = preg_replace('/<\?/', '', $t);
+        $t = preg_replace('/^return\s+/i', '', $t);
+        $t = preg_replace('/;\s*$/', '', $t);
+        $t = trim($t);
+        if ($t === '') return null;
+
+        // Fast path: if it's already valid JSON, just return it
+        $decoded = json_decode($t, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        // Try eval (safe: this is a developer tool for the user's own code)
+        try {
+            $decoded = @eval('return ' . $t . ';');
+        } catch (\Throwable $e) {
+            $decoded = null;
+        }
+
+        if ($decoded !== null && !is_string($decoded)) {
+            return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        // Regex fallback for simple cases: key=>value without complex nesting
+        $t = str_replace('=>', ':', $t);
+        $t = str_replace(['[', ']'], ['{', '}'], $t);
+        $t = preg_replace('/([{,]\s*)([A-Za-z_]\w*)\s*:/', '$1"$2":', $t);
+        // Replace single quotes with double quotes (careful with apostrophes)
+        $t = str_replace("'", '"', $t);
+        $decoded = json_decode($t, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        return null;
     }
 
     private static function jsonToPhp(mixed $data, int $depth = 0): string
@@ -921,6 +971,226 @@ final class Backend
             return $value >= (int)$lo && $value <= (int)$hi;
         }
         return (int)$field === $value;
+    }
+
+    /** Month aliases: jan=1..dec=12 */
+    private const CRON_MONTH_ALIAS = [
+        'jan' => 1, 'feb' => 2, 'mar' => 3, 'apr' => 4,
+        'may' => 5, 'jun' => 6, 'jul' => 7, 'aug' => 8,
+        'sep' => 9, 'oct' => 10, 'nov' => 11, 'dec' => 12,
+    ];
+
+    /** Day-of-week aliases: sun=0..sat=6 */
+    private const CRON_DAY_ALIAS = [
+        'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3,
+        'thu' => 4, 'fri' => 5, 'sat' => 6,
+    ];
+
+    /** Field configs: name => ['min'=>, 'max'=>, 'aliases'=>] */
+    private const CRON_FIELDS = [
+        'second'     => ['min' => 0, 'max' => 59],
+        'minute'     => ['min' => 0, 'max' => 59],
+        'hour'       => ['min' => 0, 'max' => 23],
+        'dayOfMonth' => ['min' => 1, 'max' => 31],
+        'month'      => ['min' => 1, 'max' => 12, 'aliases' => self::CRON_MONTH_ALIAS],
+        'dayOfWeek'  => ['min' => 0, 'max' => 7, 'aliases' => self::CRON_DAY_ALIAS],
+    ];
+
+    private const CRON_MODE_FIELDS = [
+        'linux'   => ['minute', 'hour', 'dayOfMonth', 'month', 'dayOfWeek'],
+        'seconds' => ['second', 'minute', 'hour', 'dayOfMonth', 'month', 'dayOfWeek'],
+    ];
+
+    private const CRON_FIELD_HINT = [
+        'auto'    => '自动检测 5 或 6 字段',
+        'linux'   => '分 时 日 月 周',
+        'seconds' => '秒 分 时 日 月 周',
+    ];
+
+    /** Detect mode from field count: 'linux' (5) or 'seconds' (6). */
+    public static function cronDetectMode(string $expr): string
+    {
+        $n = count(preg_split('/\s+/', trim($expr)));
+        return $n === 6 ? 'seconds' : 'linux';
+    }
+
+    /** Return human-readable field hint for a mode. */
+    public static function cronFieldHints(string $expr): string
+    {
+        $mode = self::cronDetectMode($expr);
+        return self::CRON_FIELD_HINT[$mode] ?? '';
+    }
+
+    /**
+     * Build a cron expression from generation parameters.
+     *
+     * @param array{mode?:string, genMode:string, intMin?:int, minute?:int, hour?:int, dow?:int, dom?:int} $p
+     */
+    public static function cronBuildExpr(array $p): string
+    {
+        $outMode = ($p['mode'] ?? 'auto') === 'auto' ? 'linux' : ($p['mode'] ?? 'linux');
+        $intMin  = max(1, min(59, $p['intMin'] ?? 5));
+        $minute  = max(0, min(59, $p['minute'] ?? 0));
+        $hour    = max(0, min(23, $p['hour'] ?? 0));
+        $dow     = max(0, min(6, $p['dow'] ?? 0));
+        $dom     = max(1, min(31, $p['dom'] ?? 1));
+        $withPrefix = static fn (string $e): string => $outMode === 'linux' ? $e : "0 {$e}";
+
+        return match ($p['genMode']) {
+            'everyMinute'   => $outMode === 'linux' ? '* * * * *' : '0 * * * * *',
+            'everyNMinutes' => $withPrefix("*/{$intMin} * * * *"),
+            'hourly'        => $withPrefix("{$minute} * * * *"),
+            'daily'         => $withPrefix("{$minute} {$hour} * * *"),
+            'weekly'        => $withPrefix("{$minute} {$hour} * * {$dow}"),
+            'monthly'       => $withPrefix("{$minute} {$hour} {$dom} * *"),
+            default         => '* * * * *',
+        };
+    }
+
+    /**
+     * Full cron parser: returns next N run times within 1 year.
+     *
+     * @return array{detectedMode:string, fieldHint:string, runs:list<string>}
+     * @throws \InvalidArgumentException
+     */
+    public static function cronGetNextRuns(string $expr, int $count = 10, string $mode = 'auto'): array
+    {
+        $fields = preg_split('/\s+/', trim($expr));
+        $resolved = match ($mode) {
+            'linux'   => count($fields) === 5 ? 'linux' : throw new \InvalidArgumentException('Linux 模式需要 5 个字段'),
+            'seconds' => count($fields) === 6 ? 'seconds' : throw new \InvalidArgumentException('秒级模式需要 6 个字段'),
+            default   => count($fields) === 6 ? 'seconds' : (count($fields) === 5 ? 'linux' : throw new \InvalidArgumentException('Cron 表达式需要 5 或 6 个字段')),
+        };
+
+        $names = self::CRON_MODE_FIELDS[$resolved];
+        $sched = [];
+        foreach ($names as $i => $nm) {
+            $sched[$nm] = self::cronParseFieldFull($fields[$i], $nm, self::CRON_FIELDS[$nm]);
+        }
+        // Default second=0 when linux mode
+        if (!isset($sched['second'])) {
+            $sched['second'] = ['values' => [0], 'wildcard' => false];
+        }
+
+        $scanBySecond = $resolved !== 'linux'
+            || !($sched['second']['values'] === [0] && !$sched['second']['wildcard']);
+
+        // Build match function
+        $matchDay = static function (\DateTimeImmutable $d, array $s): bool {
+            $dom = in_array((int)$d->format('j'), $s['dayOfMonth']['values'], true);
+            $dow = in_array((int)$d->format('w'), $s['dayOfWeek']['values'], true);
+            if ($s['dayOfMonth']['wildcard'] && $s['dayOfWeek']['wildcard']) return true;
+            if ($s['dayOfMonth']['wildcard']) return $dow;
+            if ($s['dayOfWeek']['wildcard']) return $dom;
+            return $dom || $dow;
+        };
+
+        $isMatch = static function (\DateTimeImmutable $d, array $s) use ($matchDay): bool {
+            return in_array((int)$d->format('s'), $s['second']['values'], true)
+                && in_array((int)$d->format('i'), $s['minute']['values'], true)
+                && in_array((int)$d->format('G'), $s['hour']['values'], true)
+                && $matchDay($d, $s)
+                && in_array((int)$d->format('n'), $s['month']['values'], true);
+        };
+
+        $cursor = new \DateTimeImmutable('now');
+        $cursor = $cursor->setMicrosecond(0);
+        if ($scanBySecond) {
+            $cursor = $cursor->modify('+1 second');
+        } else {
+            $cursor = $cursor->setTime((int) $cursor->format('H'), (int) $cursor->format('i'), 0)->modify('+1 minute');
+        }
+
+        $limit = $scanBySecond ? 366 * 24 * 60 * 60 : 366 * 24 * 60;
+        $runs  = [];
+        for ($i = 0; $i < $limit && count($runs) < $count; $i++) {
+            if ($isMatch($cursor, $sched)) {
+                $runs[] = $cursor->format('Y-m-d H:i:s D');
+            }
+            $cursor = $scanBySecond ? $cursor->modify('+1 second') : $cursor->modify('+1 minute');
+        }
+
+        if ($runs === []) {
+            throw new \InvalidArgumentException('未来一年内没有匹配的执行时间');
+        }
+
+        return [
+            'detectedMode' => $resolved,
+            'fieldHint'    => self::CRON_FIELD_HINT[$resolved] ?? '',
+            'runs'         => $runs,
+        ];
+    }
+
+    /**
+     * Parse a single cron field into a set of matching values.
+     *
+     * @param array{min:int, max:int, aliases?:array<string,int>} $cfg
+     * @return array{values:list<int>, wildcard:bool}
+     * @throws \InvalidArgumentException
+     */
+    private static function cronParseFieldFull(string $field, string $name, array $cfg): array
+    {
+        $values   = [];
+        $wildcard = false;
+        $parts    = explode(',', $field);
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                throw new \InvalidArgumentException("{$name} 包含空值");
+            }
+            $sp    = explode('/', $part, 2);
+            $range = $sp[0];
+            $step  = isset($sp[1]) ? (int)$sp[1] : 1;
+            if ($step < 1) {
+                throw new \InvalidArgumentException("{$name} 步长必须大于 0");
+            }
+
+            if ($range === '*') {
+                $wildcard = true;
+                self::cronAddRange($values, $cfg['min'], $cfg['max'], $step, $name);
+                continue;
+            }
+
+            $rv = explode('-', $range, 2);
+            if (count($rv) === 1) {
+                $values[] = self::cronNormalize($rv[0], $name, $cfg);
+                continue;
+            }
+            if (count($rv) === 2) {
+                self::cronAddRange($values, self::cronNormalize($rv[0], $name, $cfg), self::cronNormalize($rv[1], $name, $cfg), $step, $name);
+                continue;
+            }
+            throw new \InvalidArgumentException("{$name} 包含无效的范围");
+        }
+
+        return ['values' => array_values(array_unique($values)), 'wildcard' => $wildcard];
+    }
+
+    /** Normalize a value (alias or int), validate range. */
+    private static function cronNormalize(string $value, string $name, array $cfg): int
+    {
+        $lv      = strtolower($value);
+        $aliases = $cfg['aliases'] ?? [];
+        $mapped  = array_key_exists($lv, $aliases) ? $aliases[$lv] : (int)$value;
+
+        if (!is_int($mapped) && !ctype_digit((string)$mapped)) {
+            throw new \InvalidArgumentException("{$value} 对 {$name} 无效");
+        }
+        $mapped = (int)$mapped;
+        if ($name === 'dayOfWeek' && $mapped === 7) $mapped = 0;
+        if ($mapped < $cfg['min'] || $mapped > $cfg['max']) {
+            throw new \InvalidArgumentException("{$value} 超出 {$name} 范围 ({$cfg['min']}-{$cfg['max']})");
+        }
+        return $mapped;
+    }
+
+    /** Add a range of values to the array. */
+    private static function cronAddRange(array &$values, int $start, int $end, int $step, string $name): void
+    {
+        for ($v = $start; $v <= $end; $v += $step) {
+            $values[] = $name === 'dayOfWeek' && $v === 7 ? 0 : $v;
+        }
     }
 
     // ── URL Timing (curl) ────────────────────────────────────────────────────

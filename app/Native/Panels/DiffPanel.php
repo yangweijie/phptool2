@@ -96,9 +96,6 @@ final class DiffPanel implements Panel
 
         // ── WebView output ───────────────────────────────────────────────
         $webId = "{$key}:web";
-        $webH = max(100, $height - $inputH - 130);
-        $webLeaf = LayoutNode::leaf($webId, new WebViewSpec(html: self::PLACEHOLDER_HTML), width: $w, height: $webH);
-        $webLeaf->style->grow = 1.0;
 
         // ── Wire handlers ─────────────────────────────────────────────────
         $surface->onClick("{$key}:run", function () use ($a, $b, $surface, $key): void {
@@ -149,13 +146,25 @@ final class DiffPanel implements Panel
             file_put_contents($tmp, $result);
         });
 
+        // ── Stats section with header ────────────────────────────────────
+        $statsHeader = Ui::label('对比摘要', $w, 14, 20);
+        $statsSection = LayoutNode::column(id: "{$key}:statsSection", gap: 4, width: $w, height: 36, align: LayoutStyle::ALIGN_STRETCH);
+        $statsSection->child($statsHeader);
+        $statsSection->child($statsRow);
+
         // ── Assembly ──────────────────────────────────────────────────────
+        // Heights: spacer(4) + title(28) + inputRow($inputH+24) + toolbar(32) + stats(36) = $inputH+124
+        // Gaps: 5 × 12 = 60.  Total non-scroll = $inputH + 184.
+        $webH = max(100, $height - $inputH - 184);
+        $webLeaf = LayoutNode::leaf($webId, new WebViewSpec(html: self::PLACEHOLDER_HTML), width: $w, height: $webH);
+        $webLeaf->style->grow = 1.0;
+
         $rows = LayoutNode::column(id: "{$key}:root", gap: 12, align: LayoutStyle::ALIGN_STRETCH, width: $w, height: $height);
-        $rows->child(LayoutNode::leaf(null, null, width: $w, height: 16));
+        $rows->child(LayoutNode::leaf(null, null, width: $w, height: 4));
         $rows->child(Ui::title('Diff Compare', $w));
         $rows->child($inputRow);
         $rows->child($toolbarRow);
-        $rows->child($statsRow);
+        $rows->child($statsSection);
         $rows->child($webLeaf);
 
         return $rows;

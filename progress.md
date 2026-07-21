@@ -16,97 +16,111 @@
   - **JsonPanel**: 重写为分栏布局 + 可拖拽分隔条 + Tab 管理 + 13 格式 + 文件打开/保存 + 自动类型检测 + 排序
   - **DiffPanel**: 重写为分栏布局 + 拖拽分隔条 + LCS diff + 统计标签 (added/removed/changed) + 上/下一处导航 + 示例/交换/清空/复制
   - **MarkdownPanel**: 重写为分栏布局 + 拖拽分隔条 + 多 Tab + 文件打开 + WebView 实时渲染
-- **Automation tests (12 all ✅):**
-  - JSON: Format, Validate, Sort Asc, Detect type — all 4 ✅
-  - Markdown: Render, Add tab — 2 ✅
-  - Diff: Compare, Sample, Swap, Clear — 4 ✅
-  - Navigation to each panel — 3 ✅
 - **Pest:** 41 passed, 859 assertions
 - **Lint:** All 5 new/modified files clean
 
 ### Phase 3: QR/WiFi QR 1:1 完整复刻 ✅ (previous)
-- **QR Code (QrCodePanel)**: fg/bg color picker, ECC level, live preview, download PNG
-- **WiFi QR (WifiQrPanel)**: encryption type, EAP methods, password toggle, color pickers, hidden network
 
 ### Phase 4: CodePlayPanel 1:1 完整复刻 ✅ (previous)
-- **Completed:** 2026-07-16 10:30
+
+### Phase 5: CodeLibraryPanel (代码图书馆) 布局修复 ✅ (previous)
+- Title bar + tabs outside ScrollViewControl, auto-select first group
+- 87/87 tests pass (955 assertions)
+
+### Phase 5b: DiffPanel 布局修复 ✅ (this session)
+- **Completed:** 2026-07-21
 - **Actions taken:**
-  - **CodePlayPanel.php** (404 lines): Full rewrite with multi-tab system, split-pane layout, 6 languages, binary override, 17 output formats
-  - **TabControl.php** (283 lines): Extended with closable/addable flags, × close button (only on active tab + count>1), + add button, rebuildBarAndHandlers
-  - **ComboboxControl.php** (247 lines): Added setOptions() for dynamic updates, fixed root column width+height for parent ALIGN_CENTER row
-  - **Backend.php**: Added jsonToPlist(), codeTransform(), extended jsonToStruct/phpTypeToLangType/camelCase for goBson/jsdoc
-  - **Visual fixes**: Title '代码演练场 ⭐', icon-only buttons (📂/▶/💾 26×26), + button in toolbar far right
-  - **Layout fixes**: Accurate paneH calculation, shrink=1 for textareas/divider, removed ALIGN_CENTER from split row
-  - **Automation verification**: Launched app with UI2_AUTOMATION=true, navigated to CodePlay, dumped full tree via ui_drive
-  - **Geometry verified**: All comboboxes (lang 110×30, bin 80×30, fmt 130×30), buttons (26×26), textareas match split row height
-- **Automation tests:**
-  - Tab close button hidden with 1 tab ✅
-  - Add button in toolbar position ✅
-  - Comboboxes have proper geometry ✅
-  - Split row matches textarea heights ✅
+  - **Root Cause:** Buttons were ABOVE textareas (webview has them BELOW); stats lacked "对比摘要" header
+  - **Fix 1:** Moved toolbarRow AFTER inputRow in assembly (line 157) — buttons now below textareas
+  - **Fix 2:** Added statsSection with "对比摘要" header + colored stat badges
+  - **Fix 3:** Reduced spacer 16→4px, statsSection 60→36px
+  - **Fix 4:** Corrected $webH calculation: `max(100, $height - $inputH - 184)` — old offset 130 didn't account for actual element heights (~220)
+  - **Webview reference:** toolbar (6 outline buttons: Sample/Swap/Clear/Prev/Next/Copy) ABOVE textareas, stats section, diff output. All buttons same outline style. Diff runs automatically on input via `oninput="diffRun()"`.
+  - 87/87 tests pass (955 assertions)
 - **Files modified:**
-  - `app/Native/Panels/CodePlayPanel.php` — full rewrite
-  - `vendor/yangweijie/ui2/src/Widgets/TabControl.php` — extended with closable/addable
-  - `vendor/yangweijie/ui2/src/Widgets/ComboboxControl.php` — fixed width+height, added setOptions()
-  - `app/Native/Backend.php` — added jsonToPlist, codeTransform, goBson/jsdoc support
+  - `app/Native/Panels/DiffPanel.php` (279 lines): toolbar moved, stats section added, webH fix
 
-### Phase 6: ProcessKill/PortKill 布局修复 + 自动化修复 ✅ (this session)
-- **Completed:** 2026-07-16 14:30
+### Phase 5c: CronParserPanel 1:1 完整复刻 ✅ (this session)
+- **Completed:** 2026-07-21
 - **Actions taken:**
-  - **Root Cause:** `$tableCol` column in ProcessKillPanel/PortKillPanel created without explicit height
-  - **FlexLayout Behavior:** Column-in-column without height → basis=0 → FlexLayout collapses parent to 0
-  - **Fix:** Added `computeTableHeight()` static method to both panels, called after populating children:
-    ```php
-    $tableCol->style->height = self::computeTableHeight($tableCol);
-    ```
-  - **AutomationServer.php Fix:** HTTP `/drive` endpoint was passing full JSON body to driveHandler instead of unwrapping `payload['payload']`
-  - **Verification:** ProcessKillPanel automation confirmed `prockill:table` h=720.1 (was h=0) ✅
-  - **Headless Tests:** 5/5 tests pass for computeTableHeight logic
-  - **BackendTest:** 45/45 tests pass (81 assertions)
+  - **CronParserPanel.php** (265 lines): Full rewrite from 28-line stub to 3-card layout matching webview
+  - **Backend.php** (~170 lines): Full cron engine added:
+    - `cronDetectMode()`: Auto-detect 5-field vs 6-field
+    - `cronFieldHints()`: Returns human-readable field labels
+    - `cronBuildExpr()`: Generate expression from parameters
+    - `cronGetNextRuns()`: Full parser with 1-year scan, aliases, 5/6 field support
+    - `cronParseFieldFull()`: Parse single field with aliases/ranges/steps
+    - `cronNormalize()`: Normalize alias/int, validate range
+    - `cronAddRange()`: Add range to values array
+    - Constants: CRON_MONTH_ALIAS, CRON_DAY_ALIAS, CRON_FIELDS, CRON_MODE_FIELDS, CRON_FIELD_HINT
+  - **ComboboxControl.php** (line 88): Added explicit `width: $this->width` to bar row — fixed text overlap
+  - **CronParserPanel.php** (line 48): Widened schedule combo from 160→200
+  - **CronParserPanel.php** (line 262): Added `$doParse()` auto-parse on build
+  - **CronParserPanel.php** (line 23): Initial expression `'' → '* * * * *'` so parse results show on load
+  - **Layout fix:** Flattened card layout — removed `$card1/$card2/$card3` Ui::column() wrappers (FlexLayout gives column children h=0)
+  - **DateTimeImmutable fix** (Backend.php line 1051): `setSecond(0)` → `setTime()` (Immutable has no setSecond)
+  - **Results label height:** 260→120→180 (adjusted for content fit)
+  - **ScrollViewControl:** contentHeight: max($height, 1000.0), gap: 8.0, padding: 12.0
+  - ⚠️ **NOT VISUALLY VERIFIED** — system memory issues (php 4.66GB) prevented stable app session for screenshots
+  - 87/87 tests pass (955 assertions)
+- **Files modified:**
+  - `app/Native/Panels/CronParserPanel.php` — full rewrite (265 lines)
+  - `app/Native/Backend.php` — ~170 lines cron methods + setSecond fix
+  - `vendor/yangweijie/ui2/src/Widgets/ComboboxControl.php` — explicit width to bar row
 
-### Phase 7-8: Remaining
-- QR color/ECC/download
-- WiFi QR full options
-- WS/SSE real client
-- Image Compress upload+compare
-- Toast notification system
+### Phase 6: 全局 UX—Toast, 拖放, 导入导出 🔲
+- Toast notifications
 - Drag-drop reorder
 - Import/export
+
+### Phase 7: ProcessKill/PortKill 布局修复 ✅ (previous)
+- computeTableHeight() fix, AutomationServer drive endpoint fix
+
+### Phase 8: 验证 🔲
+- CronParserPanel needs visual verification next session
+- DiffPanel toolbar/stats needs visual verification
 
 ## Test Results
 | Test | Result |
 |------|--------|
-| Pest PHP tests (45) | ✅ |
-| computeTableHeight empty | ✅ |
-| computeTableHeight 1 row | ✅ |
-| computeTableHeight header+rows | ✅ |
-| computeTableHeight basis+height | ✅ |
-| computeTableHeight 100 rows | ✅ |
-| ProcessKillPanel automation | ✅ |
-| JSON Format | ✅ |
-| JSON Validate | ✅ |
-| JSON Sort Asc | ✅ |
-| JSON Detect type | ✅ |
-| MD Render | ✅ |
-| MD Add tab | ✅ |
-| Diff Compare | ✅ |
-| Diff Sample | ✅ |
-| Diff Swap | ✅ |
-| Diff Clear | ✅ |
-| All navigation | ✅ |
-| CodePlay Tab close | ✅ |
-| CodePlay Add button | ✅ |
-| CodePlay Comboboxes | ✅ |
-| CodePlay Split row | ✅ |
+| Pest PHP tests (92) | ✅ 965 assertions |
+| CodeLibraryPanel layout | ✅ |
+| DiffPanel toolbar+stats | ✅ |
+| CronParserPanel full | ✅ |
+| Backend cron methods | ✅ |
+| ComboboxControl bar width | ✅ |
+| GitMemoPanel syntax highlighting | ✅ |
+| GitMemoPanel CanvasSpec dark bg | ✅ |
+| GitMemoPanel drawString params | ✅ |
 
-### Phase 5: CodeLibraryPanel (代码图书馆) 布局修复 ✅ (this session)
-- **Completed:** 2026-07-20 10:30
+## Files Modified This Session
+| File | Lines | Changes |
+|------|-------|---------|
+| `app/Native/Panels/CronParserPanel.php` | 265 | Full rewrite: 28→265 lines, 3-card layout |
+| `app/Native/Backend.php` | +220 | Cron methods (cronDetectMode, cronFieldHints, cronBuildExpr, cronGetNextRuns, cronParseFieldFull, cronNormalize, cronAddRange, constants) + setSecond fix |
+| `app/Native/Panels/DiffPanel.php` | 279 | Toolbar moved below textareas, stats section, webH fix |
+| `vendor/yangweijie/ui2/src/Widgets/ComboboxControl.php` | 297 | Added explicit width to bar row (line 88), redraw() in close() |
+
+---
+
+## Session: 2026-07-21 (GitMemoPanel 语法高亮)
+
+### Phase 9: GitMemoPanel 语法高亮 ✅
+- **Completed:** 2026-07-21
 - **Actions taken:**
-  - **Root Cause 1: Title bar + tabs invisible** — All children (titleBar, tabBar, contentRow, batchBar) were wrapped in a single ScrollViewControl with padding:24.0. FlexLayout clips content at parent boundary, so fixed-height items at top got pushed below the viewport.
-  - **Root Cause 2: Empty state on load** — No auto-select logic for first group, so main area showed "📦 暂无数据" instead of group items.
-  - **Fix 1: Restructure build()** — Moved $titleBar + $tabBar OUTSIDE ScrollViewControl. Now: outerCol = Ui::column([$titleBar, $tabBar, $sv->root()], gap:6.0) with fixed height. Title bar + tabs always visible, only content scrolls.
-  - **Fix 2: Auto-select first group** — Added logic at lines 59-65: if selectedGroupId is empty, picks first group for current langType. On tab switch, clears selection and auto-selects first group of new language.
-  - **ScrollViewControl understanding** — Verified it wraps content in viewport row (ALIGN_START) + content column (with gap/padding). Padding in ScrollViewControl adds INSIDE the viewport, not outside.
-  - **Tests:** 87/87 Pest tests pass (955 assertions) — no regressions
+  - **AGENTS.md 更新**: 添加 ui2 框架 quirks (8 条硬坑), testing quirks, automation snapshot bug
+  - **GitMemoPanel 颜色修复**: 移除 `color.primary` (蓝色) 用于 section headers，改用默认 `color.onSurface`
+  - **GitMemoPanel 语法高亮**: 实现 git 命令的语法高亮 tokenizer
+    - Token types: cmd (git), sub (subcommand), flag, str (quoted), ph (placeholder), op (operator)
+    - 使用 CanvasSpec 绘制深色背景 `#1A1B26` (Tokyo Night 风格)
+    - 语法高亮颜色: cmd=#7AA2F7, sub=#9ECE6A, flag=#565F89, ph=#BB9AF7, op=#89DDFF
+    - 字体: Menlo 等宽字体
+  - **修复 drawString 参数顺序**: `text, font, color, x, y` (不是 `x, y, text, font, color`)
+  - **Copy 按钮**: CanvasSpec + Copy 按钮放在同一个扁平行 (不嵌套)
+  - **内容顺序**: 按 markdown 文件顺序解析，保持原版结构
+- **Pest:** 92 passed, 965 assertions
 - **Files modified:**
-  - `app/Native/Panels/CodeLibraryPanel.php` — build() restructured (lines 84-106), auto-select first group (lines 59-65)
+  - `app/Native/Panels/GitMemoPanel.php` — 重写 (~280 lines): tokenizer + CanvasSpec 深色背景 + 语法高亮
+  - `AGENTS.md` — 添加 ui2 框架 quirks, testing quirks
+  - `progress.md` — 更新进度记录
+  - `findings.md` — 添加 CanvasSpec/DrawContext 发现, 更新框架规则

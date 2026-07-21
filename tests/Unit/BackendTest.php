@@ -65,6 +65,36 @@ test('jsonValidate checks valid/invalid JSON', function () {
     expect(Backend::jsonValidate(''))->toContain('Invalid');
 });
 
+test('phpToJson converts PHP array syntax to JSON', function () {
+    $result = Backend::phpToJson("['a' => 'b']");
+    expect($result)->not->toBeNull();
+    expect($result)->toContain('"a"');
+    expect($result)->toContain('"b"');
+});
+
+test('phpToJson handles nested arrays', function () {
+    $result = Backend::phpToJson("['name' => 'Jay', 'items' => [1, 2, 3]]");
+    $arr = json_decode($result, true);
+    expect($arr['name'])->toBe('Jay');
+    expect($arr['items'])->toBe([1, 2, 3]);
+});
+
+test('phpToJson handles <?php tag', function () {
+    $result = Backend::phpToJson('<?php ["x" => 1]');
+    expect($result)->toContain('"x"');
+    expect($result)->toContain('1');
+});
+
+test('phpToJson returns null for invalid input', function () {
+    expect(Backend::phpToJson('not php at all >>>'))->toBeNull();
+});
+
+test('jsonConvert accepts PHP array input', function () {
+    $result = Backend::jsonConvert("['key' => 'value']", 'json');
+    expect($result)->toContain('"key"');
+    expect($result)->toContain('"value"');
+});
+
 test('jsonConvert to PHP array', function () {
     $result = Backend::jsonConvert('{"a":1}', 'php');
     expect($result)->toContain("'a'");

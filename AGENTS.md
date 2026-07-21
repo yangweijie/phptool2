@@ -52,6 +52,19 @@ app/Native/
 4. Add backend logic to `Backend` if needed.
 5. Every interactive node ID must be prefixed with the panel key (e.g. `{$key}:enc`) to prevent handler collisions when panels are swapped.
 
+## ui2 framework quirks (hard-won, read before building UI)
+
+These are real bugs you will hit — not theoretical:
+
+1. **NEVER nest `Ui::column()` inside ScrollViewControl's content column** — FlexLayout gives column children h=0, so nested columns collapse to zero height.
+2. **`LayoutNode::row()` WITHOUT explicit width → children overflow** — ALWAYS set `width: $w` on rows inside columns.
+3. **ScrollViewControl `contentHeight` MUST be > `height`** — otherwise ScrollViewRenderer returns null and no scrollbar appears.
+4. **FlexLayout basis**: `$fixed = $isRow ? $cs->width : $cs->height; $base = $fixed ?? $cs->basis ?? 0.0` — if you don't set width/height, basis defaults to 0.
+5. **ui2 has no `display:none`** — use `height=0` to hide elements.
+6. **FlexLayout runs ONCE during `bind()`** — updating style->width after bind does NOT update the computed $w.
+7. **libui Area has NO scroll callback** — AreaDelegate only has draw/mouse/mouseCrossed/dragBroken/key.
+8. **ComboboxControl bar row needs explicit `width`** — without it, FlexLayout gives $base=0 causing text overlap/ghost text.
+
 ## Testing quirks
 
 - **PHP tests (Pest)** exercise only `Catalog` + `Backend` — the Surface/GUI layer needs native libs and is not tested headlessly. Test files in `tests/Unit/`.
@@ -59,6 +72,7 @@ app/Native/
 - **Automation tests** use the native app's built-in MCP automation server (port 18765), which exposes click/drag/inspect/tree/rect actions. The `UI2_AUTOMATION=true` env var must be set for automation mode.
 - No CI workflows exist.
 - No JS linter configured.
+- `automation snapshot` returns empty arrays — `toNode()` doesn't handle Surface/Window, only SemanticsNode.
 
 ## Dependencies worth knowing
 
