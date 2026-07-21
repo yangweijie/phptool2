@@ -1,100 +1,116 @@
-<?php
-
-declare(strict_types=1);
-
+<?php declare(strict_types=1);
 namespace App\Native\Panels;
-
-use App\Native\Backend;
-use App\Native\Panel;
-use App\Native\Ui;
+use App\Native\Backend; use App\Native\Panel; use App\Native\Ui;
+use Libui\Color;
+use Libui\Draw\DrawContext;
+use Libui\Text\FontDescriptor;
 use Yangweijie\Ui2\Layout\LayoutNode;
 use Yangweijie\Ui2\Layout\LayoutStyle;
+use Yangweijie\Ui2\Rendering\WidgetRenderer\CanvasSpec;
 use Yangweijie\Ui2\Rendering\WidgetRenderer\CheckboxSpec;
 use Yangweijie\Ui2\Rendering\WidgetRenderer\LabelSpec;
-use Yangweijie\Ui2\Rendering\WidgetRenderer\TextFieldSpec;
 use Yangweijie\Ui2\Widgets\ScrollViewControl;
 use Yangweijie\Ui2\Widgets\Surface;
 
 final class ChmodPanel implements Panel
 {
+    /** @var list<bool> */
+    private static array $bits = [];
+
     public function build(Surface $surface, string $key, float $width, float $height): LayoutNode
     {
         $w = $width - 48;
 
-        /** @var list<bool> */
-        $bits = Backend::chmodToBits('755');
-        $letters = ['r', 'w', 'x'];
-        $groups = ['Owner', 'Group', 'Other'];
+        if (empty(self::$bits)) {
+            self::$bits = Backend::chmodToBits('000');
+        }
 
-        $octLabel = LayoutNode::leaf("{$key}:oct", new LabelSpec('755', size: 14), width: 120, height: 24);
-        $symLabel = LayoutNode::leaf("{$key}:sym", new LabelSpec('rwxr-xr-x', size: 14), width: 200, height: 24);
+        $groups = ['Owner (u)', 'Group (g)', 'Public (o)'];
+        $perms = ['Read (4)', 'Write (2)', 'Execute (1)'];
+        $colW = ($w - 80) / 3;
 
-        $recompute = static function () use (&$bits, $octLabel, $symLabel, $surface): void {
-            $r = Backend::chmodFromBits($bits);
-            $octLabel->spec = new LabelSpec($r['octal'], size: 14);
-            $symLabel->spec = new LabelSpec($r['symbolic'], size: 14);
-            $surface->redraw();
-        };
+        // Header row
+        $headerRow = LayoutNode::row(gap: 0.0, height: 28.0, width: $w, align: LayoutStyle::ALIGN_CENTER);
+        $headerRow->child(LayoutNode::leaf(null, new LabelSpec('', size: 12.0), width: 80.0, height: 28.0));
+        foreach ($groups as $g) {
+            $headerRow->child(LayoutNode::leaf(null, new LabelSpec($g, size: 12.0, opacity: 0.65), width: $colW, height: 28.0));
+        }
 
-        // 9 checkboxes, kept so "Apply" can refresh them.
-        /** @var array<int,LayoutNode> $bLeaves */
-        $bLeaves = [];
-        $groupCols = [];
-        for ($g = 0; $g < 3; $g++) {
-            $col = LayoutNode::column(gap: 6, padding: 8, align: LayoutStyle::ALIGN_START, width: 150, height: 130);
-            $col->child(Ui::label($groups[$g], 130, 12, 18));
-            for ($i = 0; $i < 3; $i++) {
-                $idx = $g * 3 + $i;
-                $leaf = LayoutNode::leaf("{$key}:b{$idx}", new CheckboxSpec(label: $letters[$i], checked: $bits[$idx]), width: 120, height: 28);
-                $bLeaves[$idx] = $leaf;
-                $surface->onClick("{$key}:b{$idx}", static function () use ($idx, $leaf, $surface, &$bits, $recompute): void {
-                    $bits[$idx] = !$bits[$idx];
-                    $spec = $leaf->spec;
-                    if ($spec instanceof CheckboxSpec) {
-                        $leaf->spec = new CheckboxSpec(label: $spec->label, checked: $bits[$idx]);
+        // Permission rows
+        $permRows = [];
+        foreach ($perms as $pi => $permLabel) {
+            $row = LayoutNode::row(gap: 0.0, height: 32.0, width: $w, align: LayoutStyle::ALIGN_CENTER);
+            $row->child(LayoutNode::leaf(null, new LabelSpec($permLabel, size: 12.0), width: 80.0, height: 32.0));
+
+            foreach ($groups as $gi => $gName) {
+                $idx = $gi * 3 + $pi;
+                $cbId = "{$key}:b{$idx}";
+                $cb = LayoutNode::leaf($cbId, new CheckboxSpec(checked: self::$bits[$idx]), width: $colW, height: 32.0);
+                $row->child($cb);
+
+                $surface->onClick($cbId, function () use ($idx, $cbId, $surface, $key) {
+                    self::$bits[$idx] = !self::$bits[$idx];
+                    // Update checkbox visual state
+                    $cbNode = LayoutNode::find($surface->rootLayout(), $cbId);
+                    if ($cbNode !== null && $cbNode->spec instanceof CheckboxSpec) {
+                        $cbNode->spec = new CheckboxSpec(checked: self::$bits[$idx]);
                     }
-                    $recompute();
+                    self::updateDisplay($surface, $key);
                 });
-                $col->child($leaf);
             }
-            $groupCols[] = $col;
-        }
-        $triadRow = LayoutNode::row(gap: 8, align: LayoutStyle::ALIGN_START, height: 130);
-        foreach ($groupCols as $c) {
-            $triadRow->child($c);
+            $permRows[] = $row;
         }
 
-        // Octal input + Apply
-        $modeLeaf = Ui::textField("{$key}:mode", 'e.g. 755', 140);
-        $surface->onText("{$key}:mode", static function (string $c, bool $bs) use ($modeLeaf, $surface, &$mode): void {
-            $cur = $modeLeaf->spec instanceof TextFieldSpec ? $modeLeaf->spec->value : '';
-            $mode = $bs ? mb_substr($cur, 0, -1) : $cur . $c;
-            $modeLeaf->spec = new TextFieldSpec(value: $mode, placeholder: 'e.g. 755');
-            $surface->redraw();
+        // Result display (CanvasSpec for large centered text)
+        $resultCanvas = new CanvasSpec(function (DrawContext $ctx, float $cw, float $ch) {
+            $oct = Backend::chmodFromBits(self::$bits)['octal'];
+            $sym = Backend::chmodFromBits(self::$bits)['symbolic'];
+            $font = new FontDescriptor('Arial', 36.0);
+            $fontSm = new FontDescriptor('Arial', 24.0);
+            // Octal number centered
+            $ctx->drawString($oct, $font, Color::rgb(0x67C23A), ($cw - strlen($oct) * 22) / 2, 20);
+            // Symbolic string centered
+            $ctx->drawString($sym, $fontSm, Color::rgb(0x67C23A), ($cw - strlen($sym) * 15) / 2, 70);
         });
-        $mode = '755';
-        $apply = Ui::button("{$key}:apply", 'Apply', 'soft', 100);
-        $surface->onClick("{$key}:apply", static function () use (&$mode, &$bits, $bLeaves, $recompute): void {
-            $bits = Backend::chmodToBits($mode);
-            foreach ($bLeaves as $idx => $leaf) {
-                $leaf->spec = new CheckboxSpec(label: $leaf->spec instanceof CheckboxSpec ? $leaf->spec->label : '', checked: $bits[$idx]);
+        $resultNode = LayoutNode::leaf(null, $resultCanvas, width: $w, height: 120.0);
+
+        // Command display
+        $cmd = Backend::chmodFromBits(self::$bits)['octal'];
+        $cmdLabel = LayoutNode::leaf("{$key}:cmd", new LabelSpec("chmod {$cmd} path", size: 13.0), width: $w - 40.0, height: 24.0);
+        $copyBtn = Ui::button("{$key}:copy", '📋', 'outline', 32.0, 24.0);
+        $cmdRow = LayoutNode::row(gap: 4.0, height: 32.0, width: $w, align: LayoutStyle::ALIGN_CENTER);
+        $cmdRow->child($cmdLabel);
+        $cmdRow->child($copyBtn);
+
+        $surface->onClick("{$key}:copy", function () use ($surface, $key) {
+            $node = LayoutNode::find($surface->rootLayout(), "{$key}:cmd");
+            if ($node !== null && $node->spec instanceof LabelSpec) {
+                Backend::copyText($node->spec->text);
             }
-            $recompute();
         });
 
-        $rows = [
-            Ui::title('Chmod Calculator', $w),
-            $triadRow,
-            Ui::label('Octal / Symbolic', $w),
-            LayoutNode::row(gap: 16, align: LayoutStyle::ALIGN_CENTER, height: 24)
-                ->child($octLabel)->child($symLabel),
-            Ui::label('Set from octal', $w),
-            LayoutNode::row(gap: 10, align: LayoutStyle::ALIGN_CENTER, height: 36)
-                ->child($modeLeaf)->child($apply),
-        ];
+        // Flat structure
+        $children = array_merge([
+            LayoutNode::leaf(null, new LabelSpec('Chmod计算器', size: 16.0, opacity: 0.85), width: $w, height: 36.0),
+            $headerRow,
+        ], $permRows, [
+            $resultNode,
+            $cmdRow,
+        ]);
 
-        $sv = new ScrollViewControl("p:{$key}", $rows, width: $width, height: $height, gap: 12.0, padding: 18.0, contentHeight: 460);
+        $totalH = 400.0;
+        $sv = new ScrollViewControl("p:{$key}", $children, width: $width, height: $height, gap: 4.0, padding: 18.0, contentHeight: max($totalH, $height));
         $sv->bind($surface);
         return $sv->root();
+    }
+
+    private static function updateDisplay(Surface $surface, string $key): void
+    {
+        $r = Backend::chmodFromBits(self::$bits);
+        $node = LayoutNode::find($surface->rootLayout(), "{$key}:cmd");
+        if ($node !== null && $node->spec instanceof LabelSpec) {
+            $node->spec = new LabelSpec("chmod {$r['octal']} path", size: 13.0);
+        }
+        $surface->redraw();
     }
 }

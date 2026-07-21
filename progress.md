@@ -106,6 +106,8 @@
 | WebView config editor | ✅ |
 | BomCleanPanel 1:1 layout | ✅ |
 | Backend bomCleanDir | ✅ |
+| ChmodPanel 1:1 layout | ✅ |
+| Checkbox state update fix | ✅ |
 
 ## Files Modified This Session
 | File | Lines | Changes |
@@ -125,6 +127,7 @@
 | `app/Native/Panels/PhpObfuscatorPanel.php` | ~150 | 重写: 匹配截图 + WebView 配置编辑器 |
 | `app/Native/Panels/BomCleanPanel.php` | ~180 | 重写: 匹配原版布局 (文件夹选择器+文件类型) |
 | `app/Native/Backend.php` | +40 | 新增 bomCleanDir() 递归清理函数 |
+| `app/Native/Panels/ChmodPanel.php` | ~110 | 重写: 匹配截图布局 (表格+复选框+结果显示) |
 
 ---
 
@@ -286,3 +289,22 @@
 - **Files modified:**
   - `app/Native/Panels/BomCleanPanel.php` — 重写 (~180 lines): 匹配原版布局
   - `app/Native/Backend.php` — 新增 `bomCleanDir()` 递归清理函数
+
+### Phase 18: ChmodPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **ChmodPanel**: 重写匹配截图布局
+    - 标题: "Chmod计算器" + ☆
+    - 权限表格: Owner (u), Group (g), Public (o) 列
+    - 行: Read (4), Write (2), Execute (1)
+    - 每个单元格有复选框，点击实时更新
+    - 结果显示: CanvasSpec 绘制大号绿色八进制和符号表示
+    - 命令显示: "chmod 755 path" + 📋 复制按钮
+  - **修复 2 个 bug:**
+    1. `foreach ($groups as $gi)` → `foreach ($groups as $gi => $gName)` 获取索引
+    2. Checkbox 状态更新: 找到节点并更新 `CheckboxSpec(checked: ...)`
+  - **扁平结构**: ScrollViewControl 直接接受所有子节点
+  - **CanvasSpec 居中文本**: 用 `($cw - $textW) / 2` 计算居中位置
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/ChmodPanel.php` — 重写 (~110 lines): 匹配截图布局

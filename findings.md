@@ -138,6 +138,8 @@
 18. **文件夹选择器**: 用 `$win->dialogs()->openFolder()` 替代 `FilePickerDialog::pick()`
 19. **静态变量保持状态**: 窗口大小变化时面板重建，用静态变量 `$lastPath`, `$fileTypeText` 保持状态
 20. **LabelSpec 高度**: 多行文本需要足够高度，10 行约需 200px
+21. **foreach 索引获取**: `foreach ($arr as $val)` 只能获取值，`foreach ($arr as $idx => $val)` 才能获取索引
+22. **CheckboxSpec 状态更新**: 点击后需要找到节点并更新 `$node->spec = new CheckboxSpec(checked: ...)`
 
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*
