@@ -96,6 +96,7 @@
 | RegexTesterPanel 1:1 layout | ✅ |
 | RequestTimePanel flat layout | ✅ |
 | Backend requestTime structured | ✅ |
+| SslMakePanel 1:1 layout | ✅ |
 
 ## Files Modified This Session
 | File | Lines | Changes |
@@ -108,6 +109,7 @@
 | `app/Native/Panels/RegexTesterPanel.php` | ~200 | 1:1 匹配截图: 英文标签, Sample text, Diagram SVG |
 | `app/Native/Panels/RequestTimePanel.php` | ~70 | 重写: 扁平结构, 11 行指标表格 |
 | `app/Native/Backend.php` | +30 | requestTime() 返回结构化数组 |
+| `app/Native/Panels/SslMakePanel.php` | ~80 | 重写: 匹配截图布局 (域名列表 + 文件路径) |
 
 ---
 
@@ -168,3 +170,18 @@
 - **Files modified:**
   - `app/Native/Panels/RequestTimePanel.php` — 重写 (~70 lines): 扁平结构 + 结构化数据
   - `app/Native/Backend.php` — `requestTime()` 返回数组 + 计算下载速度/HTTP版本
+
+### Phase 12: SslMakePanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **SslMakePanel**: 重写匹配截图布局
+    - 标题行: "SSL证书" + "生成" 按钮在右侧
+    - 域名列表: 大文本框, placeholder: "Domains (Example: *.mydomain.tld), separated by line."
+    - CA证书路径: 输入框 + 📁 按钮
+    - 证书保存路径: 输入框 + 📁 按钮
+    - 生成逻辑: 从域名列表提取第一个域名作为 CN
+  - **扁平结构**: ScrollViewControl 直接接受所有子节点
+  - **`LayoutNode::row()` 直接传 width**: 不用 `Ui::row()`
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/SslMakePanel.php` — 重写 (~80 lines): 匹配截图布局
