@@ -104,6 +104,8 @@
 | ProcessKillPanel 1:1 layout | ✅ |
 | PhpObfuscatorPanel 1:1 layout | ✅ |
 | WebView config editor | ✅ |
+| BomCleanPanel 1:1 layout | ✅ |
+| Backend bomCleanDir | ✅ |
 
 ## Files Modified This Session
 | File | Lines | Changes |
@@ -121,6 +123,8 @@
 | `app/Native/Panels/PortKillPanel.php` | ~180 | 重写: 匹配截图布局 (搜索+表格+空状态) |
 | `app/Native/Panels/ProcessKillPanel.php` | ~180 | 重写: PortKillPanel 风格 |
 | `app/Native/Panels/PhpObfuscatorPanel.php` | ~150 | 重写: 匹配截图 + WebView 配置编辑器 |
+| `app/Native/Panels/BomCleanPanel.php` | ~180 | 重写: 匹配原版布局 (文件夹选择器+文件类型) |
+| `app/Native/Backend.php` | +40 | 新增 bomCleanDir() 递归清理函数 |
 
 ---
 
@@ -263,3 +267,22 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/PhpObfuscatorPanel.php` — 重写 (~150 lines): 匹配截图 + WebView 编辑器
+
+### Phase 17: BomCleanPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **BomCleanPanel**: 重写匹配原版布局
+    - 标题: "文件Bom清理" + ☆ + "清理" 按钮
+    - 目录输入: 输入框 + 📁 按钮 (使用 `openFolder()` 文件夹选择器)
+    - 排除目录: TextAreaControl, 默认: .idea, .git, .svn, .vscode, node_modules
+    - File Type: 显示文件类型摘要 (前 10 种 + 溢出提示)
+    - 结果: TextAreaControl 显示清理结果
+  - **Backend 新增**: `bomCleanDir($path, $exclude)` 递归清理目录 BOM
+  - **状态持久化**: 静态变量 `$lastPath`, `$fileTypeText` 保持窗口大小变化时的状态
+  - **高度调整**: File Type 区域从 80px → 200px 避免内容截断
+  - **文件夹选择器**: 用 `$win->dialogs()->openFolder()` 替代 `FilePickerDialog::pick()`
+  - **TextareaControl 初始化**: 在 `bind()` 后设置 `TextAreaSpec` 避免默认值丢失
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/BomCleanPanel.php` — 重写 (~180 lines): 匹配原版布局
+  - `app/Native/Backend.php` — 新增 `bomCleanDir()` 递归清理函数

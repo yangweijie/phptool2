@@ -928,6 +928,76 @@ final class Backend
         return ['cleaned' => false, 'msg' => 'No BOM found'];
     }
 
+    /**
+     * Recursively clean BOM from all files in a directory.
+     * @param list<string> $exclude Directories to exclude (e.g. ['.git', 'node_modules'])
+     * @return array{total:int, checked:int, success:int, fail:int, successFiles:list<string>, failFiles:list<array{path:string,msg:string}>}
+     */
+    public static function bomCleanDir(string $path, array $exclude = []): array
+    {
+        $result = ['total' => 0, 'checked' => 0, 'success' => 0, 'fail' => 0, 'successFiles' => [], 'failFiles' => []];
+
+        if (!file_exists($path)) {
+            return ['error' => 'Path not found: ' . $path];
+        }
+
+        // Single file mode
+        if (is_file($path)) {
+            $result['total'] = 1;
+            $r = self::bomClean($path);
+            if (isset($r['error'])) {
+                $result['fail'] = 1;
+                $result['failFiles'][] = ['path' => $path, 'msg' => $r['error']];
+            } elseif ($r['cleaned']) {
+                $result['checked'] = 1;
+                $result['success'] = 1;
+                $result['successFiles'][] = $path;
+            } else {
+                $result['checked'] = 1;
+            }
+            return $result;
+        }
+
+        // Directory mode
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile()) continue;
+
+            $relativePath = str_replace($path . '/', '', $file->getPathname());
+            $parts = explode('/', $relativePath);
+
+            // Check exclusions
+            $excluded = false;
+            foreach ($exclude as $ex) {
+                if (in_array($ex, $parts)) {
+                    $excluded = true;
+                    break;
+                }
+            }
+            if ($excluded) continue;
+
+            $result['total']++;
+            $r = self::bomClean($file->getPathname());
+
+            if (isset($r['error'])) {
+                $result['fail']++;
+                $result['failFiles'][] = ['path' => $relativePath, 'msg' => $r['error']];
+            } elseif ($r['cleaned']) {
+                $result['checked']++;
+                $result['success']++;
+                $result['successFiles'][] = $relativePath;
+            } else {
+                $result['checked']++;
+            }
+        }
+
+        return $result;
+    }
+
     // ── Cron Parser ──────────────────────────────────────────────────────────
     /** @return list<string> */
     public static function cronParse(string $expr): array
