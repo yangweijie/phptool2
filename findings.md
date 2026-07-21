@@ -82,6 +82,9 @@
 | GitMemoPanel DialogCardSpec 背景是浅色 | 改用 CanvasSpec 自定义绘制深色背景 |
 | DrawContext::drawString 参数顺序错误 | 正确顺序: text, font, color, x, y |
 | GitMemoPanel 语法高亮颜色不明显 | 使用 Tokyo Night 配色: cmd=蓝, sub=绿, flag=灰, ph=紫, op=青 |
+| RequestTimePanel 行挤压/重叠 | `Ui::row()` 不传 width → 改用 `LayoutNode::row(width: $w)` |
+| RequestTimePanel 嵌套 column 导致行压缩 | 改用扁平结构，ScrollViewControl 直接接受所有子节点 |
+| LayoutNode::find() 参数类型错误 | `$surface->root()` 返回 Area → 改用 `$surface->rootLayout()` |
 
 ## Resources
 - Pest PHP 文档：https://pestphp.com/docs/installation
@@ -122,6 +125,8 @@
 8. **DrawContext::drawString() 参数顺序**: `text, font, color, x, y` — 不是 `x, y, text, font, color`
 9. **CanvasSpec 适合代码块背景**: 用 `background` 参数指定深色背景色 (hex float)，在回调中用 `fillRect` + `drawString` 绘制
 10. **CanvasSpec 是叶子节点**: 不能有子节点，需要和按钮组合时用 `Ui::row([$canvas, $button])` 扁平结构
+11. **`Ui::row()` 不传 width**: 需要显式 width 时用 `LayoutNode::row(width: $w)` 直接创建
+12. **`$surface->root()` 返回 Area**: 需要 LayoutNode 时用 `$surface->rootLayout()`
 
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*

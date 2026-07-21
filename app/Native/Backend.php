@@ -1194,14 +1194,14 @@ final class Backend
     }
 
     // ── URL Timing (curl) ────────────────────────────────────────────────────
-    public static function requestTime(string $url): string
+    public static function requestTime(string $url): array
     {
         $ch = curl_init($url);
-        if ($ch === false) return 'Failed to initialise curl';
+        if ($ch === false) return ['error' => 'Failed to initialise curl'];
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER => true,
-            CURLOPT_NOBODY => true,
+            CURLOPT_NOBODY => false,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS => 5,
@@ -1211,14 +1211,38 @@ final class Backend
         $total = microtime(true) - $start;
         $info = curl_getinfo($ch);
         curl_close($ch);
-        return sprintf(
-            "URL: %s\nHTTP: %d\nTotal: %.3fs\nDNS: %.3fs\nConnect: %.3fs\nSSL: %.3fs\nStart Transfer: %.3fs\nRedirects: %d\nSize: %s",
-            $url, $info['http_code'] ?? 0, $total,
-            $info['namelookup_time'] ?? 0, $info['connect_time'] ?? 0,
-            $info['appconnect_time'] ?? 0, $info['starttransfer_time'] ?? 0,
-            $info['redirect_count'] ?? 0,
-            ($info['size_download'] ?? 0) > 0 ? round($info['size_download'] / 1024, 1) . ' KB' : '-'
-        );
+
+        $sizeBytes = $info['size_download'] ?? 0;
+        $dns = ($info['namelookup_time'] ?? 0) * 1000;
+        $connect = ($info['connect_time'] ?? 0) * 1000;
+        $ssl = ($info['appconnect_time'] ?? 0) * 1000;
+        $ttfb = ($info['starttransfer_time'] ?? 0) * 1000;
+        $totalMs = $total * 1000;
+        $downloadTime = max(0.01, $totalMs - $ttfb);
+        $speed = $downloadTime > 0 ? ($sizeBytes / 1024) / ($downloadTime / 1000) : 0;
+
+        $version = $info['http_version'] ?? 0;
+        $httpVersion = match ($version) {
+            CURL_HTTP_VERSION_1_0 => 'HTTP/1.0',
+            CURL_HTTP_VERSION_1_1 => 'HTTP/1.1',
+            CURL_HTTP_VERSION_2_0 => 'HTTP/2',
+            CURL_HTTP_VERSION_3 => 'HTTP/3',
+            default => 'HTTP/1.1',
+        };
+
+        return [
+            ['指标' => 'DNS查询', '数值' => sprintf('%.2f ms', $dns)],
+            ['指标' => 'TCP连接', '数值' => sprintf('%.2f ms', $connect)],
+            ['指标' => '请求处理', '数值' => sprintf('%.2f ms', max(0, $ttfb - $connect))],
+            ['指标' => '首字节时间(TTFB)', '数值' => sprintf('%.2f ms', $ttfb)],
+            ['指标' => '内容下载', '数值' => sprintf('%.2f ms', $downloadTime)],
+            ['指标' => '下载速度', '数值' => sprintf('%.2f KB/s', $speed)],
+            ['指标' => '数据大小', '数值' => $sizeBytes > 0 ? sprintf('%.2f KB', $sizeBytes / 1024) : '-'],
+            ['指标' => 'HTTP版本', '数值' => $httpVersion],
+            ['指标' => '状态码', '数值' => (string) ($info['http_code'] ?? 0)],
+            ['指标' => '使用代理', '数值' => ($info['proxy'] ?? '') !== '' ? 'Yes' : 'No'],
+            ['指标' => '总耗时', '数值' => sprintf('%.2f ms', $totalMs)],
+        ];
     }
 
     // ── SSL Certificate Generator (self-signed) ─────────────────────────────

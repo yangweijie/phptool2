@@ -94,6 +94,8 @@
 | GitMemoPanel drawString params | ✅ |
 | RegexCheatsheetPanel MDN docs | ✅ |
 | RegexTesterPanel 1:1 layout | ✅ |
+| RequestTimePanel flat layout | ✅ |
+| Backend requestTime structured | ✅ |
 
 ## Files Modified This Session
 | File | Lines | Changes |
@@ -104,6 +106,8 @@
 | `vendor/yangweijie/ui2/src/Widgets/ComboboxControl.php` | 297 | Added explicit width to bar row (line 88), redraw() in close() |
 | `app/Native/Panels/RegexCheatsheetPanel.php` | ~120 | 完整 MDN 文档重写 (8 categories) |
 | `app/Native/Panels/RegexTesterPanel.php` | ~200 | 1:1 匹配截图: 英文标签, Sample text, Diagram SVG |
+| `app/Native/Panels/RequestTimePanel.php` | ~70 | 重写: 扁平结构, 11 行指标表格 |
+| `app/Native/Backend.php` | +30 | requestTime() 返回结构化数组 |
 
 ---
 
@@ -146,3 +150,21 @@
 - **Files modified:**
   - `app/Native/Panels/RegexCheatsheetPanel.php` — 完整 MDN 文档重写
   - `app/Native/Panels/RegexTesterPanel.php` — 1:1 匹配截图布局
+
+### Phase 11: RequestTimePanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **Backend::requestTime()**: 返回结构化数组（不是纯文本），包含 11 个指标
+  - **RequestTimePanel**: 重写为扁平结构匹配截图
+    - 标题: "URL请求计时分析"
+    - 表格布局: 指标 | 数值 (11 行)
+    - 使用 `LayoutNode::row()` 直接传 width（`Ui::row()` 不传 width）
+    - 用 `$surface->rootLayout()` 而不是 `$surface->root()`（后者返回 Area）
+  - **修复 3 个布局问题:**
+    1. `Ui::row()` 不传 width → 改用 `LayoutNode::row(width: $w)`
+    2. 嵌套 column 导致行挤压 → 改用扁平结构
+    3. `$surface->root()` 返回 Area → 改用 `$surface->rootLayout()`
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/RequestTimePanel.php` — 重写 (~70 lines): 扁平结构 + 结构化数据
+  - `app/Native/Backend.php` — `requestTime()` 返回数组 + 计算下载速度/HTTP版本
