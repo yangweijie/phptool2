@@ -92,6 +92,8 @@
 | GitMemoPanel syntax highlighting | ✅ |
 | GitMemoPanel CanvasSpec dark bg | ✅ |
 | GitMemoPanel drawString params | ✅ |
+| RegexCheatsheetPanel MDN docs | ✅ |
+| RegexTesterPanel 1:1 layout | ✅ |
 
 ## Files Modified This Session
 | File | Lines | Changes |
@@ -100,6 +102,8 @@
 | `app/Native/Backend.php` | +220 | Cron methods (cronDetectMode, cronFieldHints, cronBuildExpr, cronGetNextRuns, cronParseFieldFull, cronNormalize, cronAddRange, constants) + setSecond fix |
 | `app/Native/Panels/DiffPanel.php` | 279 | Toolbar moved below textareas, stats section, webH fix |
 | `vendor/yangweijie/ui2/src/Widgets/ComboboxControl.php` | 297 | Added explicit width to bar row (line 88), redraw() in close() |
+| `app/Native/Panels/RegexCheatsheetPanel.php` | ~120 | 完整 MDN 文档重写 (8 categories) |
+| `app/Native/Panels/RegexTesterPanel.php` | ~200 | 1:1 匹配截图: 英文标签, Sample text, Diagram SVG |
 
 ---
 
@@ -124,3 +128,21 @@
   - `AGENTS.md` — 添加 ui2 框架 quirks, testing quirks
   - `progress.md` — 更新进度记录
   - `findings.md` — 添加 CanvasSpec/DrawContext 发现, 更新框架规则
+
+### Phase 10: RegexCheatsheetPanel + RegexTesterPanel 完善 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **RegexCheatsheetPanel**: 用完整 MDN 文档重写 (~120 lines)
+    - 8 个分类: Normal characters, Whitespace, Character set, Escaping, Quantifiers, Boundaries, Matching, Grouping
+    - 三层缩进: section (0.55), item (1.0), sub-item (0.65)
+  - **RegexTesterPanel**: 1:1 匹配截图 (~200 lines)
+    - 英文标签: "Regex to test:", "Text to match:"
+    - Checkbox 格式: "Global Search [g]", "Case-Insensitive Search [i]" 等
+    - 默认勾选: g (Global), s (Single Line)
+    - 新增 **Sample matching text** 区块 — 高亮显示匹配
+    - 新增 **Regex Diagram** 区块 — SVG 可视化正则结构
+    - 匹配表格: #, Match, Index, Capture Groups, Named Groups
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/RegexCheatsheetPanel.php` — 完整 MDN 文档重写
+  - `app/Native/Panels/RegexTesterPanel.php` — 1:1 匹配截图布局
