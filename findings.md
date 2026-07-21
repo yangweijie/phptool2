@@ -85,6 +85,9 @@
 | RequestTimePanel 行挤压/重叠 | `Ui::row()` 不传 width → 改用 `LayoutNode::row(width: $w)` |
 | RequestTimePanel 嵌套 column 导致行压缩 | 改用扁平结构，ScrollViewControl 直接接受所有子节点 |
 | LayoutNode::find() 参数类型错误 | `$surface->root()` 返回 Area → 改用 `$surface->rootLayout()` |
+| strokeRect() 参数类型错误 | 第6个参数需要 `StrokeParams::solid()`，不是裸 float |
+| Path::__construct() 参数类型错误 | 需要 `DrawFillMode` 枚举，不是 int |
+| libui 不支持文件拖拽 | 改为点击选择文件 + 原生文件对话框 |
 
 ## Resources
 - Pest PHP 文档：https://pestphp.com/docs/installation
@@ -127,6 +130,9 @@
 10. **CanvasSpec 是叶子节点**: 不能有子节点，需要和按钮组合时用 `Ui::row([$canvas, $button])` 扁平结构
 11. **`Ui::row()` 不传 width**: 需要显式 width 时用 `LayoutNode::row(width: $w)` 直接创建
 12. **`$surface->root()` 返回 Area**: 需要 LayoutNode 时用 `$surface->rootLayout()`
+13. **`DrawContext::strokeRect()` 参数**: 第6个参数是 `?StrokeParams`，用 `StrokeParams::solid(width)` 创建
+14. **`Path` 构造函数**: 需要 `DrawFillMode` 枚举（`DrawFillMode::Winding`），不是 int
+15. **libui 无文件拖拽**: AreaDelegate 没有 drop 事件，用 `Dialogs::openFile()` 代替
 
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*

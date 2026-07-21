@@ -97,6 +97,8 @@
 | RequestTimePanel flat layout | ✅ |
 | Backend requestTime structured | ✅ |
 | SslMakePanel 1:1 layout | ✅ |
+| FileInfoPanel drop zone | ✅ |
+| DrawContext StrokeParams fix | ✅ |
 
 ## Files Modified This Session
 | File | Lines | Changes |
@@ -110,6 +112,7 @@
 | `app/Native/Panels/RequestTimePanel.php` | ~70 | 重写: 扁平结构, 11 行指标表格 |
 | `app/Native/Backend.php` | +30 | requestTime() 返回结构化数组 |
 | `app/Native/Panels/SslMakePanel.php` | ~80 | 重写: 匹配截图布局 (域名列表 + 文件路径) |
+| `app/Native/Panels/FileInfoPanel.php` | ~90 | 重写: CanvasSpec 拖拽区 + 文件对话框 |
 
 ---
 
@@ -185,3 +188,21 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/SslMakePanel.php` — 重写 (~80 lines): 匹配截图布局
+
+### Phase 13: FileInfoPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **FileInfoPanel**: 重写匹配截图布局
+    - 标题: "文件信息"
+    - 拖拽区: CanvasSpec 绘制虚线边框 + 云朵图标 + "点击选择文件"
+    - "选择文件" 按钮: 打开原生文件对话框
+    - 文件路径显示: 选中后显示路径
+    - 文件信息结果: TextAreaControl 显示
+  - **修复 3 个 DrawContext 错误:**
+    1. `strokeRect()` 第6个参数需要 `StrokeParams::solid()`，不是裸 float
+    2. `Path::__construct()` 需要 `DrawFillMode` 枚举，不是 int
+    3. 简化箭头绘制，用 `fillRect` 代替 `Path`
+  - **libui 限制**: 不支持文件拖拽，改为点击选择
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/FileInfoPanel.php` — 重写 (~90 lines): CanvasSpec 拖拽区 + 文件对话框
