@@ -133,6 +133,8 @@
 13. **`DrawContext::strokeRect()` 参数**: 第6个参数是 `?StrokeParams`，用 `StrokeParams::solid(width)` 创建
 14. **`Path` 构造函数**: 需要 `DrawFillMode` 枚举（`DrawFillMode::Winding`），不是 int
 15. **libui 无文件拖拽**: AreaDelegate 没有 drop 事件，用 `Dialogs::openFile()` 代替
+16. **ScrollView rebuild 后 layout 不更新**: FlexLayout 在 bind() 后不重新计算，改用始终显示或静态变量控制
+17. **WebView 适合配置编辑器**: 用 WebViewSpec 嵌入 HTML 编辑器，支持语法高亮和工具栏
 
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*

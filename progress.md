@@ -101,6 +101,9 @@
 | DrawContext StrokeParams fix | ✅ |
 | PortKillPanel 1:1 layout | ✅ |
 | CanvasSpec centered text | ✅ |
+| ProcessKillPanel 1:1 layout | ✅ |
+| PhpObfuscatorPanel 1:1 layout | ✅ |
+| WebView config editor | ✅ |
 
 ## Files Modified This Session
 | File | Lines | Changes |
@@ -116,6 +119,8 @@
 | `app/Native/Panels/SslMakePanel.php` | ~80 | 重写: 匹配截图布局 (域名列表 + 文件路径) |
 | `app/Native/Panels/FileInfoPanel.php` | ~90 | 重写: CanvasSpec 拖拽区 + 文件对话框 |
 | `app/Native/Panels/PortKillPanel.php` | ~180 | 重写: 匹配截图布局 (搜索+表格+空状态) |
+| `app/Native/Panels/ProcessKillPanel.php` | ~180 | 重写: PortKillPanel 风格 |
+| `app/Native/Panels/PhpObfuscatorPanel.php` | ~150 | 重写: 匹配截图 + WebView 配置编辑器 |
 
 ---
 
@@ -224,3 +229,37 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/PortKillPanel.php` — 重写 (~180 lines): 匹配截图布局
+
+### Phase 15: ProcessKillPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **ProcessKillPanel**: 用 PortKillPanel 风格重写
+    - 标题: "进程查杀" + ⚡ 图标
+    - 搜索框: placeholder "Please Input Process Name" + 🔍 按钮
+    - 按钮: "清除选择" (outline) + "消除全部" (danger)
+    - 表格: checkbox, PID, User, COMMAND 列
+    - 空状态: "暂无数据" 居中显示 (CanvasSpec)
+  - **扁平结构**: 与 PortKillPanel 一致
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/ProcessKillPanel.php` — 重写 (~180 lines): PortKillPanel 风格
+
+### Phase 16: PhpObfuscatorPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **PhpObfuscatorPanel**: 重写匹配截图布局
+    - 标题行: "PHP混淆" + ☆ + "生成" 按钮
+    - PHP版本: 输入框 placeholder "混淆用PHP版本"
+    - 源文件: 输入框 + 📁 按钮
+    - 输出路径: 输入框 + 📁 按钮
+    - 高级设置: WebView 配置编辑器 (Catppuccin 暗色主题)
+    - 配置编辑器: 默认 yakpro-po.cnf 配置示例
+  - **WebView 配置编辑器**: 始终显示 300px 高度
+    - 暗色主题 (Catppuccin Mocha)
+    - 工具栏: 保存配置、重置默认、清空
+    - 支持 Tab 缩进
+  - **文件选择**: 使用 FilePickerDialog::pick() 打开原生文件对话框
+  - **修复问题**: rebuild ScrollView 后 layout 不更新 → 改为始终显示编辑器
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/PhpObfuscatorPanel.php` — 重写 (~150 lines): 匹配截图 + WebView 编辑器
