@@ -109,6 +109,8 @@
 | ChmodPanel 1:1 layout | ✅ |
 | Checkbox state update fix | ✅ |
 | SiteSuckerPanel settings fix | ✅ |
+| TokenGeneratorPanel 1:1 layout | ✅ |
+| CheckboxSpec with label fix | ✅ |
 | SiteSuckerPanel 1:1 layout | ✅ |
 
 ## Files Modified This Session
@@ -342,3 +344,22 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/SiteSuckerPanel.php` — 修复设置按钮和布局
+
+### Phase 21: TokenGeneratorPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **TokenGeneratorPanel**: 重写匹配原版布局
+    - 标题: "Token 生成器" + 🔑 图标
+    - 字符类型: CheckboxSpec 复选框 (大写/小写/数字/符号)
+    - Token 长度: −/+/− 按钮 (1-512)
+    - 生成按钮: "生成 Token" (filled)
+    - 结果显示: Label 显示生成的 token
+    - 复制按钮: "📋 复制"
+  - **修复 3 个问题:**
+    1. ButtonSpec 模拟复选框 → 改用 CheckboxSpec(checked, label)
+    2. TextAreaSpec 更新不触发重绘 → 改用 Label + 静态变量
+    3. 点击生成按钮无反应 → 用 updateOutput() 方法更新显示
+  - **静态变量存储**: `$token`, `$upper`, `$lower`, `$numbers`, `$symbols`, `$length`
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/TokenGeneratorPanel.php` — 重写 (~170 lines): 匹配原版布局
