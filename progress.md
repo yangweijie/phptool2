@@ -111,6 +111,8 @@
 | SiteSuckerPanel settings fix | ✅ |
 | TokenGeneratorPanel 1:1 layout | ✅ |
 | CheckboxSpec with label fix | ✅ |
+| HashPanel 1:1 layout | ✅ |
+| DropdownMenuControl digest encoding | ✅ |
 | SiteSuckerPanel 1:1 layout | ✅ |
 
 ## Files Modified This Session
@@ -363,3 +365,23 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/TokenGeneratorPanel.php` — 重写 (~170 lines): 匹配原版布局
+
+### Phase 22: HashPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **HashPanel**: 重写匹配原版布局
+    - 标题: "Hash 文本" + ☆
+    - 输入区: "Your text to hash:" + TextAreaControl
+    - 编码选择: DropdownMenuControl (Hex/Bin/Base64/Base64url)
+    - 计算按钮: "计算" (filled)
+    - 哈希结果表格: 8 种算法单独显示
+      - MD5, SHA1, SHA256, SHA224, SHA512, SHA384, SHA3, RIPEMD160
+      - 每行: 算法名 + 哈希值 + 📋 复制按钮
+    - 实时计算: 输入文本后自动更新
+  - **修复 2 个问题:**
+    1. Digest Encoding 无法切换 → 改用 DropdownMenuControl
+    2. 二进制编码哈希值溢出 → 截断显示 (60 字符)，完整值存储在静态变量
+  - **静态变量存储**: `$hashes` 保存完整哈希值用于复制
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/HashPanel.php` — 重写 (~130 lines): 匹配原版布局
