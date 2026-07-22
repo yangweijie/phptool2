@@ -738,17 +738,21 @@ final class Backend
         return bin2hex(random_bytes($length));
     }
 
-    // ── Encryption (AES-256-CBC) ─────────────────────────────────────────────
+    // ── Encryption (AES-256-CBC, CryptoJS compatible) ─────────────────────────
     public static function encrypt(string $text, string $key): string
     {
         $cipher = 'aes-256-cbc';
-        $ivLen = openssl_cipher_iv_length($cipher);
-        $iv = openssl_random_pseudo_bytes($ivLen);
-        $encrypted = openssl_encrypt($text, $cipher, $key, OPENSSL_RAW_DATA, $iv);
+        $salt = openssl_random_pseudo_bytes(8);
+        // EVP_BytesToKey key derivation (CryptoJS compatible)
+        $keyDerivation = self::evpBytesToKey($key, $salt, 32, 16);
+        $dk = $keyDerivation['key'];
+        $iv = $keyDerivation['iv'];
+        $encrypted = openssl_encrypt($text, $cipher, $dk, OPENSSL_RAW_DATA, $iv);
         if ($encrypted === false) {
             return 'Encryption failed';
         }
-        return base64_encode($iv . $encrypted);
+        // CryptoJS format: "Salted__" + salt + ciphertext
+        return base64_encode('Salted__' . $salt . $encrypted);
     }
 
     public static function decrypt(string $text, string $key): string
@@ -758,11 +762,43 @@ final class Backend
         if ($data === false) {
             return 'Invalid base64';
         }
-        $ivLen = openssl_cipher_iv_length($cipher);
-        $iv = mb_substr($data, 0, $ivLen, '8bit');
-        $ciphertext = mb_substr($data, $ivLen, null, '8bit');
-        $dec = @openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv);
+
+        // Check if CryptoJS format ("Salted__" prefix)
+        if (substr($data, 0, 8) === 'Salted__') {
+            $salt = substr($data, 8, 8);
+            $ciphertext = substr($data, 16);
+            $keyDerivation = self::evpBytesToKey($key, $salt, 32, 16);
+            $dk = $keyDerivation['key'];
+            $iv = $keyDerivation['iv'];
+        } else {
+            // Legacy format: IV + ciphertext
+            $ivLen = openssl_cipher_iv_length($cipher);
+            $iv = mb_substr($data, 0, $ivLen, '8bit');
+            $ciphertext = mb_substr($data, $ivLen, null, '8bit');
+            $dk = hash('sha256', $key, true);
+        }
+
+        $dec = @openssl_decrypt($ciphertext, $cipher, $dk, OPENSSL_RAW_DATA, $iv);
         return $dec === false ? 'Decryption failed (wrong key or corrupted data)' : $dec;
+    }
+
+    /**
+     * EVP_BytesToKey key derivation (CryptoJS compatible).
+     */
+    private static function evpBytesToKey(string $password, string $salt, int $keyLen, int $ivLen): array
+    {
+        $keyDer = '';
+        $i = 1;
+        while (strlen($keyDer) < $keyLen + $ivLen) {
+            $prev = ($i > 1) ? substr($keyDer, -16) : '';
+            $keyDer .= md5($prev . $password . $salt, true);
+            $i++;
+        }
+
+        return [
+            'key' => substr($keyDer, 0, $keyLen),
+            'iv' => substr($keyDer, $keyLen, $ivLen),
+        ];
     }
 
     // ── RSA Key Generator ────────────────────────────────────────────────────

@@ -113,6 +113,9 @@
 | CheckboxSpec with label fix | ✅ |
 | HashPanel 1:1 layout | ✅ |
 | DropdownMenuControl digest encoding | ✅ |
+| EncryptPanel 1:1 layout | ✅ |
+| EVP_BytesToKey CryptoJS compat | ✅ |
+| TextAreaControl getValue fix | ✅ |
 | SiteSuckerPanel 1:1 layout | ✅ |
 
 ## Files Modified This Session
@@ -385,3 +388,24 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/HashPanel.php` — 重写 (~130 lines): 匹配原版布局
+
+### Phase 23: EncryptPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **EncryptPanel**: 重写匹配原版布局
+    - 标题: "加密解密" + 🔐 图标
+    - 两列并排: 加密 | 解密
+    - 加密列: 明文输入 + 密钥 + 算法选择 + 加密结果 + 加密按钮
+    - 解密列: 密文输入 + 密钥 + 算法选择 + 解密结果 + 解密按钮
+    - 算法选择: AES, TripleDES, Rabbit, RC4 (按钮切换)
+  - **修复 4 个问题:**
+    1. TextAreaSpec 更新不触发重绘 → 改用 Label
+    2. Backend::decrypt 只支持 AES-256-CBC → 实现 CryptoJS 兼容 (EVP_BytesToKey)
+    3. TextAreaControl 值获取错误 → 使用 `getValue()` 而不是 `spec->value`
+    4. EncryptPanel 传多余参数 → 移除 `$algo` 参数
+  - **EVP_BytesToKey 实现**: 修正 key derivation 使用前一个 block 的最后 16 字节
+  - **静态变量存储**: `$controls` 保存 TextAreaControl 引用
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/EncryptPanel.php` — 重写 (~180 lines): 匹配原版布局
+  - `app/Native/Backend.php` — 修正 EVP_BytesToKey 实现 + CryptoJS 兼容
