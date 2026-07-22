@@ -140,6 +140,8 @@
 20. **LabelSpec 高度**: 多行文本需要足够高度，10 行约需 200px
 21. **foreach 索引获取**: `foreach ($arr as $val)` 只能获取值，`foreach ($arr as $idx => $val)` 才能获取索引
 22. **CheckboxSpec 状态更新**: 点击后需要找到节点并更新 `$node->spec = new CheckboxSpec(checked: ...)`
+23. **ScrollViewControl 不支持分栏**: 子节点始终垂直堆叠，不能并排显示主内容和设置面板
+24. **height=0 切换在 bind() 后不重排**: `style->height` 修改后 FlexLayout 不会重新计算，需要其他方式
 
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*

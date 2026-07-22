@@ -108,6 +108,8 @@
 | Backend bomCleanDir | ✅ |
 | ChmodPanel 1:1 layout | ✅ |
 | Checkbox state update fix | ✅ |
+| SiteSuckerPanel settings fix | ✅ |
+| SiteSuckerPanel 1:1 layout | ✅ |
 
 ## Files Modified This Session
 | File | Lines | Changes |
@@ -128,6 +130,7 @@
 | `app/Native/Panels/BomCleanPanel.php` | ~180 | 重写: 匹配原版布局 (文件夹选择器+文件类型) |
 | `app/Native/Backend.php` | +40 | 新增 bomCleanDir() 递归清理函数 |
 | `app/Native/Panels/ChmodPanel.php` | ~110 | 重写: 匹配截图布局 (表格+复选框+结果显示) |
+| `app/Native/Panels/SiteSuckerPanel.php` | ~160 | 重写: 匹配原版布局 (URL/设置/下载) |
 
 ---
 
@@ -308,3 +311,34 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/ChmodPanel.php` — 重写 (~110 lines): 匹配截图布局
+
+### Phase 19: SiteSuckerPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **SiteSuckerPanel**: 重写匹配原版布局
+    - 标题: "网站抓取" + ☆ + ⚙️ 设置按钮
+    - URL 输入框
+    - url(0/0) + 搜索框
+    - host + 搜索框
+    - 暂无数据状态
+    - 设置区域 (inline): 保存路径、窗口数量、网络代理、超时时间、图片/视频限制、页面限制、域名排除
+  - **设置按钮**: 在标题行添加 ⚙️ 按钮
+  - **设置切换**: 点击 ⚙️ 切换显示/隐藏设置区域
+  - **扁平结构**: ScrollViewControl 直接接受所有子节点
+  - **下载功能**: SiteSucker 下载网站
+- **已知问题**: ScrollViewControl 不支持 split/side-by-side 布局; height=0 toggle 在 bind() 后不触发重排
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/SiteSuckerPanel.php` — 重写 (~160 lines): 匹配原版布局
+
+### Phase 20: SiteSuckerPanel 设置修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **修复设置按钮不显示**: `$settingsBtn` 创建了但没加到布局中 → 添加到标题行
+  - **修复设置面板布局错乱**: ScrollViewControl 不支持 split 布局 → 改用内联显示
+  - **修复首次点击无效**: FlexLayout 在 bind() 后不重新计算 (框架规则 #6) → 设置区域始终显示
+  - **最终方案**: 设置区域始终可见，滚动查看
+- **根本原因**: FlexLayout 运行一次后不再重新计算，改变 height 属性不会触发布局更新
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/SiteSuckerPanel.php` — 修复设置按钮和布局
