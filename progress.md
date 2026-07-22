@@ -116,6 +116,8 @@
 | EncryptPanel 1:1 layout | ✅ |
 | EVP_BytesToKey CryptoJS compat | ✅ |
 | TextAreaControl getValue fix | ✅ |
+| JwtPanel WebView 1:1 layout | ✅ |
+| Web Crypto API JWT encode/decode | ✅ |
 | SiteSuckerPanel 1:1 layout | ✅ |
 
 ## Files Modified This Session
@@ -409,3 +411,22 @@
 - **Files modified:**
   - `app/Native/Panels/EncryptPanel.php` — 重写 (~180 lines): 匹配原版布局
   - `app/Native/Backend.php` — 修正 EVP_BytesToKey 实现 + CryptoJS 兼容
+
+### Phase 24: JwtPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **JwtPanel**: 用 WebView 重写匹配原版布局
+    - 两列网格: Encode | Decode
+    - Encode: Algorithm + Secret + Header JSON + Payload JSON + JWT 输出 + Encode 按钮
+    - Decode: Algorithm + Secret + JWT 输入 + 签名验证状态 + Header + Payload + Decode 按钮
+    - 使用 Web Crypto API (HMAC-SHA256/384/512)
+    - 暗色主题 (Catppuccin Mocha)
+    - 响应式布局: 两列网格，小屏自动单列
+  - **修复 3 个问题:**
+    1. TextAreaControl spec 更新不触发重绘 → 改用 WebView
+    2. 嵌套 column 布局错乱 → 改用扁平结构
+    3. encode/decode 按钮无效 → 改用 Web Crypto API 直接处理
+  - **WebView 实现**: 使用 HTML/CSS/JS + Web Crypto API
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/JwtPanel.php` — 重写 (~150 lines): WebView 实现

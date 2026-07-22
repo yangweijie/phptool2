@@ -140,6 +140,11 @@
 20. **LabelSpec 高度**: 多行文本需要足够高度，10 行约需 200px
 21. **foreach 索引获取**: `foreach ($arr as $val)` 只能获取值，`foreach ($arr as $idx => $val)` 才能获取索引
 22. **CheckboxSpec 状态更新**: 点击后需要找到节点并更新 `$node->spec = new CheckboxSpec(checked: ...)`
+23. **TextAreaControl 值获取**: 使用 `getValue()` 方法，不是 `spec->value`（spec 只保存初始值）
+24. **EVP_BytesToKey**: CryptoJS 兼容的 key derivation 使用前一个 block 的最后 16 字节，不是整个累积的 key
+25. **TextAreaSpec 更新不触发重绘**: 改用 LabelSpec 显示输出结果
+26. **WebView 适合复杂交互工具**: JWT、正则测试等复杂工具用 WebView 实现更可靠
+27. **Web Crypto API**: 浏览器原生支持 HMAC-SHA256/384/512，比 OpenSSL 更简单
 23. **ScrollViewControl 不支持分栏**: 子节点始终垂直堆叠，不能并排显示主内容和设置面板
 24. **height=0 切换在 bind() 后不重排**: `style->height` 修改后 FlexLayout 不会重新计算，需要其他方式
 
