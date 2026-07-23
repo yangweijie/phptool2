@@ -501,3 +501,29 @@
   3. 需要在 ui2 框架层面修复 WebView 生命周期管理
 - **影响范围**: 所有使用 WebViewSpec 的面板 (RegexTester, JWT, Timestamp, Base64, Base64File, PhpObfuscator, Markdown 等)
 - **状态**: 已知问题，需要框架层面修复
+
+### Phase 29: UrlPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **UrlPanel**: 用 WebView 重写匹配原版
+    - 两列网格: URL 编码 | URL 解码
+    - URL 编码: encodeURIComponent 实时转换
+    - URL 解码: decodeURIComponent 实时转换
+    - 每列: 输入文本框 + 输出文本框 + 📋 复制按钮
+    - 暗色主题 (Catppuccin Mocha)
+- **Pest:** 92 passed, 969 assertions
+- **Files modified:**
+  - `app/Native/Panels/UrlPanel.php` — 重写 (~120 lines): WebView 两列布局
+
+### Phase 30: EscapeHtmlPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **EscapeHtmlPanel**: 用 WebView 重写匹配原版
+    - 两列网格: HTML 转义 | HTML 反转义
+    - 转义: textContent → innerHTML 实时转换
+    - 反转义: innerHTML → textContent 实时转换
+    - 每列: 输入文本框 + 输出文本框 + 📋 复制按钮
+    - 暗色主题 (Catppuccin Mocha)
+- **Pest:** 92 passed, 969 assertions
+- **Files modified:**
+  - `app/Native/Panels/EscapeHtmlPanel.php` — 重写 (~90 lines): WebView 两列布局
