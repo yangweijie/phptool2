@@ -118,6 +118,10 @@
 | TextAreaControl getValue fix | ✅ |
 | JwtPanel WebView 1:1 layout | ✅ |
 | Web Crypto API JWT encode/decode | ✅ |
+| TimestampPanel WebView 1:1 layout | ✅ |
+| Base64Panel WebView 1:1 layout | ✅ |
+| TimestampPanel WebView 1:1 layout | ✅ |
+| datetime-local input for date picker | ✅ |
 | SiteSuckerPanel 1:1 layout | ✅ |
 
 ## Files Modified This Session
@@ -430,3 +434,35 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/JwtPanel.php` — 重写 (~150 lines): WebView 实现
+
+### Phase 25: TimestampPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **TimestampPanel**: 用 WebView 重写匹配原版布局
+    - 当前 Unix 时间戳 (自动更新, 点击复制)
+    - Unix → Date 转换 (秒/毫秒单位选择)
+    - Date → Unix 转换 (datetime-local 选择器 + 单位选择)
+    - 暗色主题 (Catppuccin Mocha)
+  - **修复 2 个问题:**
+    1. 原版无日期时间选择器 → 改用 WebView `<input type="datetime-local">`
+    2. 原版静态布局 → 改用响应式两列网格
+  - **WebView 实现**: 使用 HTML/CSS/JS + 原生 datetime-local input
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/TimestampPanel.php` — 重写 (~100 lines): WebView 实现
+
+### Phase 26: Base64Panel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **Base64Panel**: 用 WebView 重写匹配原版布局
+    - 两列网格: 字符串 → Base64 | Base64 → 字符串
+    - URL-safe 开关 (每列独立)
+    - 输入/输出文本框
+    - 📋 复制按钮
+    - 实时编码/解码 (oninput)
+    - 无效 Base64 错误提示
+    - 暗色主题 (Catppuccin Mocha)
+  - **WebView 实现**: 使用 HTML/CSS/JS + btoa/atob
+- **Pest:** 92 passed, 965 assertions
+- **Files modified:**
+  - `app/Native/Panels/Base64Panel.php` — 重写 (~120 lines): WebView 实现

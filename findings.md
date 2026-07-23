@@ -42,6 +42,12 @@
 - `close()` must call `surface->redraw()` after `refreshFocusables()` to clear overlay visually
 - `truncateForField()`: max chars = floor((width-34-16)/7.5), for width=200 = 20 chars
 
+### WebView for Complex Tools
+- **JWT, Regex, Timestamp**: Tools with rich input/output benefit from HTML/CSS/JS instead of fighting ui2 limitations
+- **Web Crypto API**: Browser-native HMAC-SHA256/384/512 — no PHP backend needed for JWT
+- **No native date/time picker in ui2**: Must use WebView `<input type="datetime-local">`
+- **onChange callback pattern**: `$ta->onChange(function (string $v) { self::$values[$key] = $v; })` — reliable way to capture user input without holding control references
+
 ## Technical Decisions
 | Decision | Rationale |
 |----------|-----------|
