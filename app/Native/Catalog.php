@@ -91,6 +91,7 @@ final class Catalog
             // ── Converter ─────────────────────────────────────────────
             ['id'=>'Timestamp','cat'=>'Converter','name'=>'时间戳','nameEn'=>'Timestamp','icon'=>'⏲️'],
             ['id'=>'base64-string-converter','cat'=>'Converter','name'=>'Base64','nameEn'=>'Base64','icon'=>'🔡'],
+            ['id'=>'base64-file-converter','cat'=>'Converter','name'=>'Base64 文件','nameEn'=>'Base64 File','icon'=>'📁'],
             ['id'=>'url-encode','cat'=>'Converter','name'=>'URL 编解码','nameEn'=>'URL Encode','icon'=>'🔗'],
             ['id'=>'escape-html','cat'=>'Converter','name'=>'HTML 转义','nameEn'=>'Escape HTML','icon'=>'🏷️'],
             // ── Web ───────────────────────────────────────────────────
@@ -111,6 +112,7 @@ final class Catalog
         $this->nativePanels = [
             'JsonParse' => 'json',
             'base64-string-converter' => 'b64',
+            'base64-file-converter' => 'b64file',
             'HashText' => 'hash',
             'Timestamp' => 'ts',
             'jwt-encoder-decoder' => 'jwt',

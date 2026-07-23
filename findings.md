@@ -153,6 +153,8 @@
 27. **Web Crypto API**: 浏览器原生支持 HMAC-SHA256/384/512，比 OpenSSL 更简单
 23. **ScrollViewControl 不支持分栏**: 子节点始终垂直堆叠，不能并排显示主内容和设置面板
 24. **height=0 切换在 bind() 后不重排**: `style->height` 修改后 FlexLayout 不会重新计算，需要其他方式
+28. **WebView 子窗口竞态条件**: 关闭 Window 时 12 个 WebView 子窗口的 destroy 顺序与 bridge 库的 uninit 存在竞态，导致 `uiControlDestroy` 空指针崩溃。这是 libui + PebView bridge 的底层问题，需要框架层面修复
+29. **WebView 面板数量影响稳定性**: 同时存在的 WebView 面板越多，关闭时崩溃概率越高。建议减少 WebView 面板数量或在关闭前手动销毁
 
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*

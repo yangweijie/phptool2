@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Native;
 
+use App\Native\Panels\Base64FilePanel;
 use App\Native\Panels\Base64Panel;
 use App\Native\Panels\BomCleanPanel;
 use App\Native\Panels\CapturerPanel;
@@ -102,6 +103,7 @@ final class NativeApp
         $this->panels = [
             'json' => new JsonPanel(),
             'b64' => new Base64Panel(),
+            'b64file' => new Base64FilePanel(),
             'hash' => new HashPanel(),
             'ts' => new TimestampPanel(),
             'jwt' => new JwtPanel(),

@@ -120,6 +120,8 @@
 | Web Crypto API JWT encode/decode | ✅ |
 | TimestampPanel WebView 1:1 layout | ✅ |
 | Base64Panel WebView 1:1 layout | ✅ |
+| Base64FilePanel WebView new | ✅ |
+| Image preview functionality | ✅ |
 | TimestampPanel WebView 1:1 layout | ✅ |
 | datetime-local input for date picker | ✅ |
 | SiteSuckerPanel 1:1 layout | ✅ |
@@ -466,3 +468,36 @@
 - **Pest:** 92 passed, 965 assertions
 - **Files modified:**
   - `app/Native/Panels/Base64Panel.php` — 重写 (~120 lines): WebView 实现
+
+### Phase 27: Base64FilePanel 新建 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **Base64FilePanel**: 新建 WebView 实现文件 Base64 转换器
+    - 两列网格: 文件 → Base64 | Base64 → 文件
+    - 文件 → Base64: 拖拽/选择文件，转换为 Base64，文件信息，复制/下载
+    - Base64 → 文件: 粘贴 Base64，文件名输入，文件信息，下载
+    - 图片预览: 点击预览按钮显示 Base64 图片
+    - 文件类型检测: PNG, JPEG, GIF, PDF, ZIP, GZIP, ELF
+    - 暗色主题 (Catppuccin Mocha)
+  - **注册到 Catalog**: 添加 'base64-file-converter' 工具
+  - **注册到 NativeApp**: 添加 Base64FilePanel 面板
+  - **图片预览功能**: 自动检测图片类型，显示预览
+- **Pest:** 92 passed, 969 assertions
+- **Files modified:**
+  - `app/Native/Panels/Base64FilePanel.php` — 新建 (~280 lines): WebView 实现
+  - `app/Native/Catalog.php` — 添加工具条目和面板映射
+  - `app/Native/NativeApp.php` — 注册 Base64FilePanel
+
+### Phase 28: 崩溃分析 — WebView 子窗口竞态条件 ⚠️
+- **Completed:** 2026-07-21
+- **问题描述**: PHP 进程在关闭窗口时崩溃 (EXC_BAD_ACCESS, SIGSEGV at 0x0000000000000000)
+- **崩溃位置**: `uiControlDestroy` 通过 FFI 调用时函数指针为 null
+- **根本原因**: libui + PebView bridge 的底层问题 — 12 个 WebView 子窗口在 Window 关闭时的 destroy 顺序与 bridge 库的 uninit 存在竞态条件
+- **框架规则 #10**: WebView creates a borderless child window — NOT a Composite. Destroying native browser windows is crash-prone (segfaults in the FFI bridge under rapid create/destroy cycles)
+- **已知限制**: 这是 ui2 框架的底层问题，非 PHP 代码 bug
+- **可能的缓解方案**:
+  1. 在关闭窗口前手动销毁所有 WebView overlays
+  2. 减少同时存在的 WebView 面板数量
+  3. 需要在 ui2 框架层面修复 WebView 生命周期管理
+- **影响范围**: 所有使用 WebViewSpec 的面板 (RegexTester, JWT, Timestamp, Base64, Base64File, PhpObfuscator, Markdown 等)
+- **状态**: 已知问题，需要框架层面修复
