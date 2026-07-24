@@ -143,8 +143,11 @@ final class QrCodePanel implements Panel
         return '<!DOCTYPE html><html><head><meta charset="utf-8">'
             . '<style>body{font-family:-apple-system,sans-serif;margin:0;padding:12px;'
             . 'display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}'
-            . 'svg{width:auto;height:auto;max-width:100%;max-height:90vh}'
-            . '</style></head><body>' . ($svg ?: '<div style="color:#888">Click <b>Generate</b> to render the QR code</div>') . '</body></html>';
+            . '.qr-wrap{display:inline-block;width:min(90vh,100%);aspect-ratio:1/1}'
+            . 'svg{display:block;max-width:100%;max-height:100%}'
+            . '</style></head><body><div class="qr-wrap">'
+            . ($svg ?: '<div style="color:#888">Click <b>Generate</b> to render the QR code</div>')
+            . '</div></body></html>';
     }
 
     private static function colorToHex(Color $c): string

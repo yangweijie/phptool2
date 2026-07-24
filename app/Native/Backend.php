@@ -827,7 +827,23 @@ final class Backend
             $options->scale = $scale;
             $options->fgColor = $fg;
             $options->bgColor = $bg;
-            return (new \chillerlan\QRCode\QRCode($options))->render($data);
+            // SVG renderer uses moduleValues, not fgColor/bgColor
+            $moduleValues = [];
+            foreach (\chillerlan\QRCode\Output\QROutputInterface::DEFAULT_MODULE_VALUES as $type => $isDark) {
+                $moduleValues[$type] = $isDark ? $fg : $bg;
+            }
+            $options->moduleValues = $moduleValues;
+            $svg = (new \chillerlan\QRCode\QRCode($options))->render($data);
+            // SVG renderer ignores scale; inject width/height so scale affects rendered size
+            if ($svg !== '' && $scale !== 1) {
+                $svg = preg_replace(
+                    '/<svg\b/',
+                    '<svg width="' . ($scale * 25) . '" height="' . ($scale * 25) . '"',
+                    $svg,
+                    1,
+                );
+            }
+            return $svg;
         } catch (\Throwable $e) {
             return "QR Error: {$e->getMessage()}";
         }

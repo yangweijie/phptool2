@@ -1,5 +1,50 @@
 # Progress Log
 
+## Session: 2026-07-24 (QR/WiFi QR 功能修复)
+
+### Phase 3b: QR/WiFi QR 功能修复 ✅
+- **Completed:** 2026-07-24
+- **问题**:
+  1. 二维码不 1:1 — CSS `max-width:100%;max-height:90vh` 用不同参考系导致拉伸
+  2. Size 按钮无效 — SVG 渲染器忽略 `scale`，无 width/height 属性
+  3. 前景色/背景色无效 — SVG 渲染器不读 `fgColor`/`bgColor`，只读 `moduleValues`
+  4. CSS `svg{width:100%;height:100%}` 覆盖了注入的尺寸属性
+- **根因分析**:
+  - `chillerlan/php-qrcode` 的 `QRMarkupSVG` 类不使用 `fgColor`/`bgColor`/`scale` 选项
+  - 颜色通过 `moduleValues` 数组设置 (dark → fg, light → bg)
+  - 尺寸通过 SVG 的 `width`/`height` 属性控制
+- **修复**:
+  - **Backend.php** (`qrCodeGenerate()`):
+    - 遍历 `DEFAULT_MODULE_VALUES` 设置 `moduleValues` 数组
+    - `preg_replace` 在 `<svg` 标签注入 `width`/`height` (`$scale * 25` px)
+  - **QrCodePanel.php** (`wrap()`):
+    - 新增 `.qr-wrap{display:inline-block;width:min(90vh,100%);aspect-ratio:1/1}` 保证正方形
+    - CSS 改为 `svg{display:block;max-width:100%;max-height:100%}` 允许 SVG 按自身尺寸渲染
+  - **WifiQrPanel.php** (`wrap()`): 同上
+- **Files modified:**
+  - `app/Native/Backend.php` — `qrCodeGenerate()` 新增 moduleValues + width/height 注入
+  - `app/Native/Panels/QrCodePanel.php` — `wrap()` CSS 修复
+  - `app/Native/Panels/WifiQrPanel.php` — `wrap()` CSS 修复
+- **Pest:** 92 passed, 969 assertions
+
+### Phase 3c: WifiQrPanel WebView 重写 ✅
+- **Completed:** 2026-07-24
+- **问题**: WiFi QR 面板用原生 widget 实现，布局混乱，按钮错位，EAP 区域不隐藏
+- **方案**: 改用 WebView 实现，匹配原版 FlyEnv 布局
+- **修复**:
+  - **WifiQrPanel.php**: 完全重写为 WebView 实现
+    - HTML/CSS/JS 全在 WebView 中，匹配原版暗色/亮色主题
+    - QR 编码器: 纯 JS 实现，支持版本 1-10
+    - 表单: Encryption/SSID/Hidden/Password/EAP/FG/BG
+    - 条件显示: Password/EAP 区域自动隐藏/显示
+    - 下载: SVG 一键下载
+  - **QR 编码器 bug 修复**:
+    - `Int8Array` 不能存 >127 的值 → 改用普通数组
+    - JavaScript 语法错误 (sed 命令破坏括号) → 完整重写
+- **Files modified:**
+  - `app/Native/Panels/WifiQrPanel.php` — WebView 完整重写
+- **Pest:** 92 passed, 969 assertions
+
 ## Session: 2026-07-15
 
 ### Phase 1: 核心 UX 框架 ✅ (previous)
@@ -83,7 +128,7 @@
 ## Test Results
 | Test | Result |
 |------|--------|
-| Pest PHP tests (92) | ✅ 965 assertions |
+| Pest PHP tests (92) | ✅ 969 assertions |
 | CodeLibraryPanel layout | ✅ |
 | DiffPanel toolbar+stats | ✅ |
 | CronParserPanel full | ✅ |

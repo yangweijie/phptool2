@@ -22,6 +22,33 @@
 - **WiFi QR (WifiQrPanel)**: ✅ 完整复刻 — encryption type, EAP methods, password toggle, color pickers, hidden network
 - Automation verified via ui_drive tree dump
 
+### Phase 3b: QR/WiFi QR 功能修复 ✅
+- **Completed:** 2026-07-24
+- **问题**: 二维码不 1:1、size/前景色/背景色按钮无效
+- **根因**:
+  1. SVG 渲染器 (`QRMarkupSVG`) 不读 `fgColor`/`bgColor`，只读 `moduleValues`
+  2. SVG 渲染器忽略 `scale`，无 width/height 属性
+  3. CSS `svg{width:100%;height:100%}` 覆盖了注入的尺寸属性
+  4. CSS `max-width:100%;max-height:90vh` 用不同参考系导致拉伸
+- **修复**:
+  - `Backend::qrCodeGenerate()`: 通过 `moduleValues` 设置颜色，注入 `width`/`height` 属性
+  - `QrCodePanel::wrap()`: `.qr-wrap` + `aspect-ratio:1/1` 保证正方形
+  - `WifiQrPanel::wrap()`: 同上
+  - CSS 改为 `max-width:100%;max-height:100%` 允许 SVG 按自身尺寸渲染
+- 92/92 tests pass (969 assertions)
+
+### Phase 3c: WifiQrPanel WebView 重写 ✅
+- **Completed:** 2026-07-24
+- **问题**: WiFi QR 面板用原生 widget 实现，布局混乱，按钮错位，EAP 区域不隐藏
+- **方案**: 改用 WebView 实现，匹配原版 FlyEnv 布局
+- **修复**:
+  - HTML/CSS/JS 全在 WebView 中，匹配原版暗色/亮色主题
+  - QR 编码器: 纯 JS 实现，支持版本 1-10
+  - 表单: Encryption/SSID/Hidden/Password/EAP/FG/BG
+  - 条件显示: Password/EAP 区域自动隐藏/显示
+  - 下载: SVG 一键下载
+- 92/92 tests pass (969 assertions)
+
 ### Phase 4: 面板深度—剩余复杂面板 ✅
 - **Code Playground (CodePlayPanel)**: ✅ 完整复刻 — multi-tab, split-pane, 6 langs, binary override, 17 formats, Save/Open/Run, icon buttons, '代码演练场 ⭐' title
 - **Automation verified**: geometry correct via ui_drive tree dump

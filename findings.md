@@ -155,6 +155,14 @@
 24. **height=0 切换在 bind() 后不重排**: `style->height` 修改后 FlexLayout 不会重新计算，需要其他方式
 28. **WebView 子窗口竞态条件**: 关闭 Window 时 12 个 WebView 子窗口的 destroy 顺序与 bridge 库的 uninit 存在竞态，导致 `uiControlDestroy` 空指针崩溃。这是 libui + PebView bridge 的底层问题，需要框架层面修复
 29. **WebView 面板数量影响稳定性**: 同时存在的 WebView 面板越多，关闭时崩溃概率越高。建议减少 WebView 面板数量或在关闭前手动销毁
+30. **QR SVG 渲染器不读 fgColor/bgColor**: `QRMarkupSVG` 使用 `moduleValues` 数组控制颜色，不是 `fgColor`/`bgColor` 选项。需要遍历 `DEFAULT_MODULE_VALUES` 设置
+31. **QR SVG 渲染器忽略 scale**: SVG 输出不使用 `scale` 选项，需要手动注入 `width`/`height` 属性到 `<svg>` 标签
+32. **CSS width:100% 覆盖 SVG 属性**: WebView 中 `svg{width:100%;height:100%}` 会覆盖 SVG 自身的 width/height 属性，应改为 `max-width:100%;max-height:100%`
+33. **SVG 1:1 容器**: 用 `aspect-ratio:1/1` + `width:min(90vh,100%)` 确保 QR 码在任何面板尺寸下都是正方形
+34. **Int8Array 不能存 >127 的值**: JavaScript 的 `Int8Array` 范围是 -128~127，QR 编码器的 GF(256) 系数数组超过 127 会被截断为负数，导致编码失败。改用普通数组
+35. **sed 命令破坏 JS 语法**: 在 minified JS 上运行 sed 替换会错误匹配括号/方括号，导致语法错误。应直接重写整个文件而非 patch
+36. **WebView 面板适合复杂表单**: WiFi QR 面板用原生 widget 实现布局混乱（按钮错位、EAP 区域不隐藏），改用 WebView 后完美匹配原版 FlyEnv 布局
+37. **QR 编码器实现复杂度**: 完整的 QR 编码器需要版本选择、数据编码、EC 纠错、矩阵填充、掩码评估等步骤，约 200 行 JS。用 PHP 后端生成更可靠
 
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*
