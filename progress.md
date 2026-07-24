@@ -527,3 +527,41 @@
 - **Pest:** 92 passed, 969 assertions
 - **Files modified:**
   - `app/Native/Panels/EscapeHtmlPanel.php` — 重写 (~90 lines): WebView 两列布局
+
+### Phase 31: MimeTypesPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **MimeTypesPanel**: 用 WebView 重写匹配原版
+    - 上部两列: MIME → 扩展名 | 扩展名 → MIME
+    - 下部表格: MIME 类型对照表 (17 种)
+    - 暗色主题 (Catppuccin Mocha)
+    - 修复 WebView 高度超出窗口问题
+- **Pest:** 92 passed, 969 assertions
+- **Files modified:**
+  - `app/Native/Panels/MimeTypesPanel.php` — 重写 (~150 lines): WebView 实现
+
+### Phase 29: UrlPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **UrlPanel**: 用 WebView 重写匹配原版
+    - 两列网格: URL 编码 | URL 解码
+    - URL 编码: encodeURIComponent 实时转换
+    - URL 解码: decodeURIComponent 实时转换
+    - 每列: 输入文本框 + 输出文本框 + 📋 复制按钮
+    - 暗色主题 (Catppuccin Mocha)
+- **Pest:** 92 passed, 969 assertions
+- **Files modified:**
+  - `app/Native/Panels/UrlPanel.php` — 重写 (~120 lines): WebView 两列布局
+
+### Phase 30: EscapeHtmlPanel 1:1 修复 ✅
+- **Completed:** 2026-07-21
+- **Actions taken:**
+  - **EscapeHtmlPanel**: 用 WebView 重写匹配原版
+    - 两列网格: HTML 转义 | HTML 反转义
+    - 转义: textContent → innerHTML 实时转换
+    - 反转义: innerHTML → textContent 实时转换
+    - 每列: 输入文本框 + 输出文本框 + 📋 复制按钮
+    - 暗色主题 (Catppuccin Mocha)
+- **Pest:** 92 passed, 969 assertions
+- **Files modified:**
+  - `app/Native/Panels/EscapeHtmlPanel.php` — 重写 (~90 lines): WebView 两列布局
